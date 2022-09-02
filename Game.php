@@ -20,17 +20,30 @@ class Game {
         $moves = [
             "E2-E4",
             "D7-D5",
-            "E4-D5",
+            "F1-C4",
+            "A7-A6",
+            "B1-C3",
+            "G8-H6",
         ];
 
         $rules = new Rules();
 
+        $color = true;
+
         foreach ($moves as $move) {
             $notation = Notation::generateFromString($move);
+            print ($board->getPieceFromPosition($notation->getFrom())->getColor() ? "White" : "Black") . " " . PHP_EOL;
+            print ($color ? "White" : "Black") . " " . PHP_EOL;
             $valid = $rules->isValidFor($notation, $board);
             if (!$valid) {
                 print "Move [".$notation."] invalid".PHP_EOL;
             } else {
+                if ($board->getPieceFromPosition($notation->getFrom())->getColor() === $color) {
+                    $color = !$color;
+                } else {
+                    print "Invalid move by COLOR: " . $notation . PHP_EOL;
+                    break;
+                }
                 $board->movePiece($notation);
                 $board->viewTerminal();
             }
@@ -41,24 +54,30 @@ class Game {
         $rules = new Rules();
         $board->viewTerminal();
 
+        $color = true;
+
         while(true){
             print "Enter Move (E2-E4): ";
             $handle = fopen ("php://stdin","rb");
             $line = fgets($handle);
             $inputData = trim($line);
-            $move = $inputData;
-            $notation = Notation::generateFromString($move);
+            if ($inputData === "exit") {
+                break;
+            }
+
+            $notation = Notation::generateFromString($inputData);
             $valid = $rules->isValidFor($notation, $board);
-            if(!$valid){
-                print "Move [" . $notation . "] invalid" . PHP_EOL;
-            }else{
-                $board->movePiece($notation);
-                if ($board->anyChecks() !== []) {
-                    print "There are checks:" . PHP_EOL;
-                    foreach ($board->anyChecks() as $check) {
-                        print $check . PHP_EOL;
-                    }
+
+            if (!$valid) {
+                print "Move [".$notation."] invalid".PHP_EOL;
+            } else {
+                if ($board->getPieceFromPosition($notation->getFrom())->getColor() === $color) {
+                    $color = !$color;
+                } else {
+                    print "Invalid move by COLOR: " . $notation . PHP_EOL;
+                    break;
                 }
+                $board->movePiece($notation);
                 $board->viewTerminal();
             }
         }

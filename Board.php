@@ -48,10 +48,10 @@ class Board {
             $newNumber = $number + $up;
 
             if (!in_array(strtolower($newLetter), ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])) {
-                continue;
+                break;
             }
             if (!in_array($newNumber, range(1, 8), true)) {
-                continue;
+                break;
             }
 
             $result[] = new Notation(new Position($letter, $number), new Position($newLetter, $newNumber));
@@ -304,14 +304,20 @@ class Board {
         $kingPiece = $this->getPieceFromPosition($king);
         assert($kingPiece !== null);
 
+        
         $diagonals = self::calculateDiagonal($king, $this);
+        
         $diagonalShorts = self::calculateDiagonal($king, $this, true);
+        
         $straights = self::calculateStraights($king, $this);
+        
         $knights = self::calculateKnights($king, $this);
+        
 
         $checks = [];
 
         foreach ($diagonals as $diagonal) {
+            
             assert ($diagonal instanceof Notation);
             $piece = $this->getPieceFromPosition($diagonal->getTo());
             if ($piece === null) {
@@ -325,6 +331,7 @@ class Board {
         }
 
         foreach ($diagonalShorts as $diagonal) {
+            
             assert ($diagonal instanceof Notation);
             $piece = $this->getPieceFromPosition($diagonal->getTo());
             if ($piece === null) {
@@ -341,6 +348,7 @@ class Board {
         }
 
         foreach ($straights as $straight) {
+            
             assert ($straight instanceof Notation);
             $piece = $this->getPieceFromPosition($straight->getTo());
             if ($piece === null) {
@@ -353,6 +361,21 @@ class Board {
             }
         }
 
+        foreach ($knights as $knight) {
+            
+            assert ($knight instanceof Notation);
+            $piece = $this->getPieceFromPosition($knight->getTo());
+            if ($piece === null) {
+                continue;
+            }
+            if ($piece->getColor() !== $kingPiece->getColor()) {
+                if ($piece->getName() === "N") {
+                    $checks[] = [$knight->getTo(), $king];
+                }
+            }
+        }
+
+        
         return $checks;
     }
 }

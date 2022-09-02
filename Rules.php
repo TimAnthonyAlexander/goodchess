@@ -3,6 +3,10 @@ namespace RealChess;
 
 
 class Rules{
+    /*
+     * All these rules in the constants have a function in the Rules class
+     */
+
     public const KING_RULES = ["CASTLE", "DIAGONAL_STEP", "LINEAR_STEP", "DIAGONAL_STEP_TAKE", "LINEAR_STEP_TAKE", "NO_CHECK"];
 
     public const QUEEN_RULES = ["DIAGONAL_ALL", "LINEAR_ALL", "DIAGONAL_ALL_TAKE", "LINEAR_ALL_TAKE"];
@@ -42,6 +46,8 @@ class Rules{
             }
         }
 
+        print "No valid rules found for ".$notation." by piece ". $piece->getName() . " and ruleset: " . json_encode($rules, JSON_THROW_ON_ERROR) . PHP_EOL;
+
         return false;
     }
 
@@ -69,7 +75,29 @@ class Rules{
             return false;
         }
 
-        return $this->$ruleName($notation, $board);
+        $return = $this->$ruleName($notation, $board);
+
+        if ($ruleName === 'CASTLE') {
+            if ($return) {
+                $straight = Board::calculateStraightBetween($notation->getFrom(), $notation->getTo(), $board);
+
+                foreach ($straight as $position) {
+                    // If king would be in check on any of the positions, castle is not allowed
+                    if ($board->calculateChecksForKing($position) !== []) {
+                        return false;
+                    }
+                }
+
+                // Put the king on the $straight[1] position and the rook on the $straight[2] position
+                $notationKing = new Notation($notation->getFrom(), $straight[1]);
+                $notationRook = new Notation($notation->getTo(), $straight[2]);
+
+                $board->movePiece($notationKing);
+                $board->movePiece($notationRook);
+            }
+        }
+
+        return $return;
     }
 
     private function PAWN_STEP(Notation $notation, Board $board): bool{
@@ -238,7 +266,7 @@ class Rules{
 
         $toPiece = $board->getPieceFromPosition($to);
 
-        if ($toPiece === null) {
+        if ($toPiece !== null) {
             return false;
         }
 
@@ -396,5 +424,100 @@ class Rules{
         return true;
     }
 
+    private function KNIGHT_STEP(Notation $notation, Board $board): bool
+    {
+        $from = $notation->getFrom();
+        $to = $notation->getTo();
+        $piece = $board->getPieceFromPosition($from);
 
+        assert($piece !== null);
+
+        $toPiece = $board->getPieceFromPosition($to);
+
+        if ($toPiece !== null) {
+            return false;
+        }
+
+        // If distance for $letter is not 1 and $number 2 and for $letter 2 and $number 1 return false
+        if (abs($from->getNumber() - $to->getNumber()) !== 2 || (Board::calculateLetter($from->getLetter(), 1) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -1) !== $to->getLetter())) {
+            if (abs($from->getNumber() - $to->getNumber()) !== 1 || (Board::calculateLetter($from->getLetter(), 2) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -2) !== $to->getLetter())) {
+                return false;
+            }
+        }
+
+
+        return true;
+    }
+
+private function KNIGHT_STEP_TAKE(Notation $notation, Board $board): bool
+    {
+        $from = $notation->getFrom();
+        $to = $notation->getTo();
+        $piece = $board->getPieceFromPosition($from);
+
+        assert($piece !== null);
+
+        $toPiece = $board->getPieceFromPosition($to);
+
+        if ($toPiece === null) {
+            return false;
+        }
+
+        if ($piece->getColor() === $toPiece->getColor()) {
+            return false;
+        }
+
+        // If distance for $letter is not 1 and $number 2 and for $letter 2 and $number 1 return false
+        if (abs($from->getNumber() - $to->getNumber()) !== 2 || (Board::calculateLetter($from->getLetter(), 1) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -1) !== $to->getLetter())) {
+            if (abs($from->getNumber() - $to->getNumber()) !== 1 || (Board::calculateLetter($from->getLetter(), 2) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -2) !== $to->getLetter())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function CASTLE(Notation $notation, Board $board): bool
+    {
+        $from = $notation->getFrom();
+        $to = $notation->getTo();
+        $piece = $board->getPieceFromPosition($from);
+
+        assert($piece !== null);
+
+        $toPiece = $board->getPieceFromPosition($to);
+
+        if ($toPiece === null) {
+            return false;
+        }
+
+        // Check distance traveled for $letter to be 2 or 3
+        if (Board::calculateLetter($from->getLetter(), 2) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -2) !== $to->getLetter()) {
+            if (Board::calculateLetter($from->getLetter(), 3) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -3) !== $to->getLetter()) {
+                return false;
+            }
+        }
+
+        $calculateStraight = Board::calculateStraightBetween($from, $to, $board);
+
+        // If there is anything on the straight except for a king and rook return false
+        foreach ($calculateStraight as $position) {
+            assert($position instanceof Position);
+
+            $piece = $board->getPieceFromPosition($position);
+
+            if ($piece !== null) {
+                if ($piece->getName() !== 'R' && $piece->getName() !== 'K') {
+                    return false;
+                }
+            }
+        }
+
+        if ($toPiece->getName() !== 'R') {
+            return false;
+        }
+
+        // Check distance traveled for $number to be 0
+        return $from->getNumber() === $to->getNumber();
+    }
 }
