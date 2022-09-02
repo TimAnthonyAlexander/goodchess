@@ -46,8 +46,6 @@ class Rules{
             }
         }
 
-        print "No valid rules found for ".$notation." by piece ". $piece->getName() . " and ruleset: " . json_encode($rules, JSON_THROW_ON_ERROR) . PHP_EOL;
-
         return false;
     }
 
@@ -62,6 +60,18 @@ class Rules{
         $fakeBoard = $board->makeBoardOfChanges(false, $notation);
 
         if ($fakeBoard->anyChecks() !== []) {
+            foreach ($fakeBoard->anyChecks() as $check) {
+                [, $checkedPiecePos] = $check;
+                // If the checked Piece color is the same as the color of the piece that is moving, it is not a valid move
+                $movingPiece = $board->getPieceFromPosition($notation->getFrom());
+
+                assert($movingPiece !== null);
+
+                if ($movingPiece->getColor() === $fakeBoard->getPieceFromPosition($checkedPiecePos)->getColor()) {
+                    print "Self check move not allowed" . PHP_EOL;
+                    return false;
+                }
+            }
             print "Check!";
             $GLOBALS['checked'] = true;
         } else {
@@ -322,7 +332,7 @@ class Rules{
             }
         }
 
-        return $count === 1;
+        return $count === 1 && $positions[count($positions) - 1]->equals($to);
     }
 
     private function LINEAR_ALL(Notation $notation, Board $board): bool
@@ -374,12 +384,13 @@ class Rules{
         foreach ($positions as $position) {
             assert($position instanceof Position);
 
+
             if ($board->getPieceFromPosition($position) !== null) {
                 $count++;
             }
         }
 
-        return $count === 1;
+        return $count === 1 && $positions[count($positions) - 1]->equals($to);
     }
 
     private function LINEAR_STEP(Notation $notation, Board $board): bool
