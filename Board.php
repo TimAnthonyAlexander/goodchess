@@ -103,6 +103,7 @@ class Board {
                 $this->board[$letter][$number] = null;
             }
         }
+        $this->lastColor = false;
 
         // White
         $this->board['a'][1] = new Piece(['piece' => 'R', 'color' => true, 'uuid' => Uuid::uuid4()->toString()]);
