@@ -11,11 +11,14 @@
             "email": "github@timanthonyalexander.de"
         }
     ],
-    "require": {
-        "ramsey/uuid": "^4.4"
-    }
-    ,
+    "scripts": {
+        "test": "php vendor/bin/phpunit tests"
+    },
     "require-dev": {
+        "ramsey/uuid": "^4.4",
+        "phpunit/phpunit": "^9.5",
         "roave/security-advisories": "dev-latest"
+    },
+    "require": {
     }
 }

@@ -111,14 +111,15 @@ class TimFish{
 
         $return = [];
 
-        if ($i === $depth) {
-            return $moves;
-        }
+
 
         foreach($moves as $piece){
             if (is_array($piece)){
                 foreach($piece as $move){
                     assert($move instanceof Notation);
+
+                    print "Calculating Notation: " . $move . PHP_EOL;
+
                     $fakeBoard = $board->makeBoardOfChanges(false, $move);
 
                     $moves = array_merge($moves, self::allPossibleMoves($fakeBoard, !$color, $depth, $i + 1));

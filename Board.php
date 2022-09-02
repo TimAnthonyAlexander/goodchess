@@ -7,6 +7,24 @@ use Ramsey\Uuid\Uuid;
 class Board {
     private array $board;
 
+    private Notation $lastMove;
+
+    private bool $lastColor = false;
+
+    /**
+     * @return Notation
+     */
+    public function getLastMove(): Notation{
+        return $this->lastMove;
+    }
+
+    /**
+     * @param Notation $lastMove
+     */
+    public function setLastMove(Notation $lastMove): void{
+        $this->lastMove = $lastMove;
+    }
+
     /**
      *
      */
@@ -18,6 +36,7 @@ class Board {
                 $this->board[$letter][$number] = null;
             }
         }
+        $this->lastMove = new Notation(Position::generateFromString('E2'), Position::generateFromString('E2'));
     }
 
     /**
@@ -165,6 +184,23 @@ class Board {
         $this->clearPiece($notation->getFrom());
 
         $this->setPiece($piece, $notation->getTo());
+
+        $this->setLastMove($notation);
+        $this->setLastColor($piece->getColor());
+    }
+
+    /**
+     * @return bool
+     */
+    public function getLastColor(): bool{
+        return $this->lastColor;
+    }
+
+    /**
+     * @param bool $lastColor
+     */
+    public function setLastColor(bool $lastColor): void{
+        $this->lastColor = $lastColor;
     }
 
     /**
@@ -530,5 +566,9 @@ class Board {
             }
         }
         return $data;
+    }
+
+    public function jsonSerialize(): array {
+        return $this->board;
     }
 }

@@ -24,12 +24,18 @@ class Rules{
     /**
      * @param Notation $notation
      * @param Board $board
+     * @param string|null $overridePiece
      * @return bool
+     * @throws \Exception
      */
     public function isValidFor(Notation $notation, Board $board, string $overridePiece = null): bool{
         $piece = $board->getPieceFromPosition($notation->getFrom());
 
         if($piece === null){
+            return false;
+        }
+
+        if ($piece->getColor() === $board->getLastColor()) {
             return false;
         }
 
@@ -85,7 +91,6 @@ class Rules{
                     return false;
                 }
             }
-            print "Check!";
             $GLOBALS['checked'] = true;
         } else {
             $GLOBALS['checked'] = false;
@@ -623,6 +628,13 @@ class Rules{
         $result = [];
 
         foreach ($moves as $move) {
+            assert($move instanceof Notation);
+
+            // If letter is not a-h or number is not 1-8 continue
+            if (!in_array($move->getTo()->getLetter(), ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) || !in_array($move->getTo()->getNumber(), [1, 2, 3, 4, 5, 6, 7, 8])) {
+                continue;
+            }
+
             if ($this->isValidFor($move, $board)) {
                 $result[] = $move;
             }
