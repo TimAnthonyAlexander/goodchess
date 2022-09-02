@@ -43,6 +43,12 @@ class Rules{
             return false;
         }
 
+        $toPiece = $board->getPieceFromPosition($notation->getTo());
+
+        if ($toPiece !== null && $toPiece->getColor() === $piece->getColor()) {
+            return false;
+        }
+
         $name = $overridePiece ?? $piece->getName();
 
         $rules = match ($name) {

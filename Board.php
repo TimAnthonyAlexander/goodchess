@@ -97,6 +97,13 @@ class Board {
      * @return void
      */
     public function initializeDefaultBoard(): void {
+        // Clear
+        foreach ($this->board as $letter => $numbers) {
+            foreach ($numbers as $number => $piece) {
+                $this->board[$letter][$number] = null;
+            }
+        }
+
         // White
         $this->board['a'][1] = new Piece(['piece' => 'R', 'color' => true, 'uuid' => Uuid::uuid4()->toString()]);
         $this->board['b'][1] = new Piece(['piece' => 'N', 'color' => true, 'uuid' => Uuid::uuid4()->toString()]);
