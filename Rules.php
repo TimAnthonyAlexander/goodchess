@@ -2,6 +2,8 @@
 namespace RealChess;
 
 
+use Generator;
+
 class Rules{
     /*
      * All these rules in the constants have a function in the Rules class
@@ -24,7 +26,7 @@ class Rules{
      * @param Board $board
      * @return bool
      */
-    public function isValidFor(Notation $notation, Board $board): bool{
+    public function isValidFor(Notation $notation, Board $board, string $overridePiece = null): bool{
         $piece = $board->getPieceFromPosition($notation->getFrom());
 
         if($piece === null){
@@ -35,7 +37,9 @@ class Rules{
             return false;
         }
 
-        $rules = match ($piece->getName()) {
+        $name = $overridePiece ?? $piece->getName();
+
+        $rules = match ($name) {
             "K" => self::KING_RULES,
             "Q" => self::QUEEN_RULES,
             "R" => self::ROOK_RULES,
@@ -46,7 +50,6 @@ class Rules{
 
         foreach($rules as $rule){
             if($this->checkRule($notation, $board, $rule)){
-                print "Move [" . $notation . "] valid by rule [$rule]." . PHP_EOL;
                 return true;
             }
         }
@@ -63,7 +66,6 @@ class Rules{
      */
     public function checkRule(Notation $notation, Board $board, string $ruleName): bool{
         if(!method_exists($this, $ruleName)){
-            print "Rule $ruleName does not exist" . PHP_EOL;
             return false;
         }
 
@@ -80,7 +82,6 @@ class Rules{
                 assert($movingPiece !== null);
 
                 if ($movingPiece->getColor() === $fakeBoard->getPieceFromPosition($checkedPiecePos)->getColor()) {
-                    print "Self check move not allowed" . PHP_EOL;
                     return false;
                 }
             }
@@ -435,6 +436,10 @@ class Rules{
             return false;
         }
 
+        if ($toPiece->getColor() === $piece->getColor()) {
+            return false;
+        }
+
         // Calculate all steps between $from and $to
         $positions = Board::calculateStraightBetween($from, $to, $board);
 
@@ -535,14 +540,7 @@ class Rules{
         }
 
         // If distance for $letter is not 1 and $number 2 and for $letter 2 and $number 1 return false
-        if (abs($from->getNumber() - $to->getNumber()) !== 2 || (Board::calculateLetter($from->getLetter(), 1) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -1) !== $to->getLetter())) {
-            if (abs($from->getNumber() - $to->getNumber()) !== 1 || (Board::calculateLetter($from->getLetter(), 2) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -2) !== $to->getLetter())) {
-                return false;
-            }
-        }
-
-
-        return true;
+        return $this->knight_move($from, $to);
     }
 
     /**
@@ -569,13 +567,7 @@ class Rules{
         }
 
         // If distance for $letter is not 1 and $number 2 and for $letter 2 and $number 1 return false
-        if (abs($from->getNumber() - $to->getNumber()) !== 2 || (Board::calculateLetter($from->getLetter(), 1) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -1) !== $to->getLetter())) {
-            if (abs($from->getNumber() - $to->getNumber()) !== 1 || (Board::calculateLetter($from->getLetter(), 2) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -2) !== $to->getLetter())) {
-                return false;
-            }
-        }
-
-        return true;
+        return $this->knight_move($from, $to);
     }
 
     /**
@@ -625,5 +617,146 @@ class Rules{
 
         // Check distance traveled for $number to be 0
         return $from->getNumber() === $to->getNumber();
+    }
+
+    public function filterMoves(Board $board, Notation...$moves): array {
+        $result = [];
+
+        foreach ($moves as $move) {
+            if ($this->isValidFor($move, $board)) {
+                $result[] = $move;
+            }
+        }
+
+        return $result;
+    }
+
+    public function getAllMovesForKing(Board $board, Position $position): array
+    {
+        $moves = [];
+
+        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() - 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber()));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber()));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() - 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() - 1));
+
+        return $moves;
+    }
+
+    public function getAllMovesForQueen(Board $board, Position $position): array
+    {
+        $moves = [];
+
+        $moves = array_merge($moves, $this->getAllMovesForBishop($board, $position));
+        $moves = array_merge($moves, $this->getAllMovesForRook($board, $position, 'R'));
+
+        return $moves;
+    }
+
+    public function getAllMovesForBishop(Board $board, Position $position): array
+    {
+        $diagonals = Board::calculateDiagonals($position, $board);
+
+        $moves = [];
+
+        foreach ($diagonals as $diagonal) {
+            assert($diagonal instanceof Notation);
+
+            if ($this->isValidFor($diagonal, $board)) {
+                $moves[] = $diagonal;
+            }
+        }
+
+        return $moves;
+    }
+
+    public function getAllMovesForRook(Board $board, Position $position, string $override = null): array
+    {
+        $straights = Board::calculateStraights($position, $board);
+
+        $moves = [];
+
+        foreach ($straights as $straight) {
+            assert($straight instanceof Notation);
+
+            if ($this->isValidFor($straight, $board, $override ?? 'R')) {
+                $moves[] = $straight;
+            }
+        }
+
+        return $moves;
+    }
+
+    public function getAllMovesForKnight(Board $board, Position $position): array
+    {
+        $moves = [];
+
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() + 2));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() - 2));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() + 2));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() - 2));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 2), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 2), $position->getNumber() - 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -2), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -2), $position->getNumber() - 1));
+
+        return $moves;
+    }
+
+    public function getAllMovesForPawn(Board $board, Position $position): array
+    {
+        $moves = [];
+
+        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() - 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber()));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber()));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() - 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() - 1));
+
+        return $moves;
+    }
+
+    public function getAllMovesForPiece(Board $board, Position $position): array
+    {
+        $piece = $board->getPieceFromPosition($position);
+
+        if ($piece === null) {
+            throw new \InvalidArgumentException('No piece at position ' . $position->getLetter() . $position->getNumber());
+        }
+
+        $movesFor = match ($piece->getName()) {
+            'K' => $this->getAllMovesForKing($board, $position),
+            'Q' => $this->getAllMovesForQueen($board, $position),
+            'B' => $this->getAllMovesForBishop($board, $position),
+            'R' => $this->getAllMovesForRook($board, $position),
+            'N' => $this->getAllMovesForKnight($board, $position),
+            'P' => $this->getAllMovesForPawn($board, $position),
+            default => throw new \InvalidArgumentException('Unknown piece ' . $piece->getName()),
+        };
+
+        return $this->filterMoves($board, ...$movesFor);
+    }
+
+    /**
+     * @param Position $from
+     * @param Position $to
+     * @return bool
+     */
+    private function knight_move(Position $from, Position $to): bool{
+        if(abs($from->getNumber() - $to->getNumber()) !== 2 || (Board::calculateLetter($from->getLetter(), 1) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -1) !== $to->getLetter())){
+            if(abs($from->getNumber() - $to->getNumber()) !== 1 || (Board::calculateLetter($from->getLetter(), 2) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -2) !== $to->getLetter())){
+                return false;
+            }
+        }
+
+
+        return true;
     }
 }

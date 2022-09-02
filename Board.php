@@ -28,7 +28,7 @@ class Board {
      * @param Board $board
      * @return array
      */
-    public static function walk(Position $position, bool $step, int $right, int $up, Board $board): array{
+    public static function calculate(Position $position, bool $step, int $right, int $up, Board $board): array{
         $originalLetter = $letter = $position->getLetter();
         $originalNumber = $number = $position->getNumber();
         $result = [];
@@ -181,11 +181,11 @@ class Board {
      * @param bool $step
      * @return array
      */
-    public static function calculateDiagonal(Position $position, Board $board, bool $step = false) {
-        $resultOne = self::walkDiagonal($position, $board, $step);
-        $resultTwo = self::walkDiagonal($position, $board, $step, up: -1);
-        $resultThree = self::walkDiagonal($position, $board, $step, right: -1);
-        $resultFour = self::walkDiagonal($position, $board, $step, right: -1, up: -1);
+    public static function calculateDiagonals(Position $position, Board $board, bool $step = false) {
+        $resultOne = self::calculateDiagonal($position, $board, $step);
+        $resultTwo = self::calculateDiagonal($position, $board, $step, up: -1);
+        $resultThree = self::calculateDiagonal($position, $board, $step, right: -1);
+        $resultFour = self::calculateDiagonal($position, $board, $step, right: -1, up: -1);
 
         return array_merge($resultOne, $resultTwo, $resultThree, $resultFour);
     }
@@ -198,8 +198,8 @@ class Board {
      * @param $up
      * @return array
      */
-    public static function walkDiagonal(Position $position, Board $board, bool $step, $right = 1, $up = 1): array {
-        return self::walk($position, $step, $right, $up, $board);
+    public static function calculateDiagonal(Position $position, Board $board, bool $step, $right = 1, $up = 1): array {
+        return self::calculate($position, $step, $right, $up, $board);
     }
 
     /**
@@ -215,14 +215,15 @@ class Board {
 
     /**
      * @param bool $color
+     * @param bool $asPosition
      * @return array<int, Piece>
      */
-    public function getPieces(bool $color): array {
+    public function getPieces(bool $color, bool $asPosition = false): array {
         $pieces = [];
-        foreach ($this->board as $row) {
-            foreach ($row as $piece) {
+        foreach ($this->board as $letter => $row) {
+            foreach ($row as $number => $piece) {
                 if ($piece !== null && $piece['color'] === $color) {
-                    $pieces[] = new Piece($piece);
+                    $pieces[] = $asPosition ? new Position($letter, $number) : new Piece($piece);
                 }
             }
         }
@@ -417,7 +418,7 @@ class Board {
      * @return array
      */
     public static function walkKnight(Position $position, Board $board, int $right, int $up): array {
-        return self::walk($position, false, $right, $up, $board);
+        return self::calculate($position, false, $right, $up, $board);
     }
 
     /**
@@ -429,7 +430,7 @@ class Board {
      * @return array
      */
     public static function walkStraight(Position $position, Board $board, bool $step = false, int $right = 0, int $up = 0): array {
-        return self::walk($position, $step, $right, $up, $board);
+        return self::calculate($position, $step, $right, $up, $board);
     }
 
     /**
@@ -440,9 +441,9 @@ class Board {
         $kingPiece = $this->getPieceFromPosition($king);
         assert($kingPiece !== null);
 
-        $diagonals = self::calculateDiagonal($king, $this);
+        $diagonals = self::calculateDiagonals($king, $this);
 
-        $diagonalShorts = self::calculateDiagonal($king, $this, true);
+        $diagonalShorts = self::calculateDiagonals($king, $this, true);
 
         $straights = self::calculateStraights($king, $this);
 
@@ -507,7 +508,27 @@ class Board {
             }
         }
 
-        
         return $checks;
+    }
+
+    /**
+     * @throws \JsonException
+     */
+    public function md5Board(): string {
+        return md5(json_encode($this->serializeBoard(), JSON_THROW_ON_ERROR));
+    }
+
+    public function serializeBoard(): array{
+        $data = [];
+        foreach ($this->board as $row){
+            foreach ($row as $piece){
+                if ($piece === null){
+                    $data[] = '0';
+                } else {
+                    $data[] = $piece['piece'];
+                }
+            }
+        }
+        return $data;
     }
 }

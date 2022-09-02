@@ -159,6 +159,7 @@ return array(
     'Ramsey\\Uuid\\Validator\\GenericValidator' => $vendorDir . '/ramsey/uuid/src/Validator/GenericValidator.php',
     'Ramsey\\Uuid\\Validator\\ValidatorInterface' => $vendorDir . '/ramsey/uuid/src/Validator/ValidatorInterface.php',
     'RealChess\\Board' => $baseDir . '/Board.php',
+    'RealChess\\Cache' => $baseDir . '/Cache.php',
     'RealChess\\Game' => $baseDir . '/Game.php',
     'RealChess\\Notation' => $baseDir . '/Notation.php',
     'RealChess\\Piece' => $baseDir . '/Piece.php',

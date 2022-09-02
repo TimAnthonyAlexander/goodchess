@@ -200,6 +200,7 @@ class ComposerStaticInit65fba8ca67d76d506ccf4e32825448c5
         'Ramsey\\Uuid\\Validator\\GenericValidator' => __DIR__ . '/..' . '/ramsey/uuid/src/Validator/GenericValidator.php',
         'Ramsey\\Uuid\\Validator\\ValidatorInterface' => __DIR__ . '/..' . '/ramsey/uuid/src/Validator/ValidatorInterface.php',
         'RealChess\\Board' => __DIR__ . '/../..' . '/Board.php',
+        'RealChess\\Cache' => __DIR__ . '/../..' . '/Cache.php',
         'RealChess\\Game' => __DIR__ . '/../..' . '/Game.php',
         'RealChess\\Notation' => __DIR__ . '/../..' . '/Notation.php',
         'RealChess\\Piece' => __DIR__ . '/../..' . '/Piece.php',

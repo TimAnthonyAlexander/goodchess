@@ -9,6 +9,9 @@ class Game {
             session_start();
         }
 
+        $cache = new Cache();
+        $cache->load();
+
         $board = new Board();
         $board->initializeDefaultBoard();
 
@@ -93,8 +96,10 @@ class Game {
                 if (isset($GLOBALS['checked']) && $GLOBALS['checked']) {
                     print "CHECKED!".PHP_EOL;
                 }
-                $eval = TimFish::evaluateWhiteVsBlack($board);
-                print "Evaluation: " . $eval . PHP_EOL;
+                $before = microtime(true);
+                $eval = round(TimFish::evaluateWhiteVsBlack($board), 3);
+                $after = round(microtime(true) - $before, 2);
+                print "Evaluation: " . $eval . " (" . $after . "s)".PHP_EOL;
             }
         }
     }
