@@ -59,15 +59,27 @@ class Rules{
 
         $anyChecks = $board->anyChecks();
 
+        $fakeBoard = $board->makeBoardOfChanges(false, $notation);
+
+        if ($fakeBoard->anyChecks() !== []) {
+            print "Check!";
+            $GLOBALS['checked'] = true;
+        } else {
+            $GLOBALS['checked'] = false;
+        }
+
         if ($anyChecks !== []) {
             foreach ($anyChecks as $anyCheck) {
                 [$checkingPiecePos, $checkedPiecePos] = $anyCheck;
+                assert($checkingPiecePos instanceof Position);
+                assert($checkedPiecePos instanceof Position);
+
                 $checkingPiece = $board->getPieceFromPosition($checkingPiecePos);
                 $checkedPiece = $board->getPieceFromPosition($checkedPiecePos);
 
                 print "Check!".PHP_EOL;
-                print "Checking piece: " . $checkingPiece . PHP_EOL;
-                print "Checked piece: " . $checkedPiece . PHP_EOL;
+                print "Checking piece: " . $checkingPiece . $checkingPiecePos . PHP_EOL;
+                print "Checked piece: " . $checkedPiece . $checkedPiecePos . PHP_EOL;
             }
         }
 

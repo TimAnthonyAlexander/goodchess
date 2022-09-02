@@ -51,13 +51,17 @@ class Game {
     }
 
     private static function play(Board $board): void {
+        print "\033[2J\033[;H";
+        print "Chess by Tim Anthony Alexander - 2022".PHP_EOL.PHP_EOL;
+
         $rules = new Rules();
         $board->viewTerminal();
 
         $color = true;
 
         while(true){
-            print "Enter Move (E2-E4): ";
+            print "A move can be like this: E2-E4, e2e4, o-o-o".PHP_EOL;
+            print "Enter Move for ". ($color ? "white" : "black") .": ";
             $handle = fopen ("php://stdin","rb");
             $line = fgets($handle);
             $inputData = trim($line);
@@ -75,10 +79,20 @@ class Game {
                     $color = !$color;
                 } else {
                     print "Invalid move by COLOR: " . $notation . PHP_EOL;
+                    $board->viewTerminal();
                     break;
                 }
+                print "\033[2J\033[;H";
+                print "Chess by Tim Anthony Alexander - 2022".PHP_EOL.PHP_EOL;
+                $before = microtime(true);
                 $board->movePiece($notation);
+                $board->anyChecks();
+                $after = round(microtime(true) - $before, 2);
                 $board->viewTerminal();
+                print "Move took: " . $after . " seconds".PHP_EOL;
+                if (isset($GLOBALS['checked']) && $GLOBALS['checked']) {
+                    print "CHECKED!".PHP_EOL;
+                }
             }
         }
     }

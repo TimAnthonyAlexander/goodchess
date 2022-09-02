@@ -22,6 +22,12 @@ class Notation{
 
     public static function generateFromString(string $notation): Notation{
         $notation = strtoupper($notation);
+
+        if (strlen($notation) === 4) {
+            // Put a dash in the middle
+            $notation = substr($notation, 0, 2) . '-' . substr($notation, 2, 2);
+        }
+
         $regex = '/([A-Z])([1-8])-([A-Z])([1-8])/';
         if (!preg_match($regex, $notation, $matches)) {
             return new Notation(new Position('a', 1), new Position('a', 1));

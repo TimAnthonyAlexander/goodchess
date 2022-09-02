@@ -29,6 +29,9 @@ class Board {
         $originalLetter = $letter = $position->getLetter();
         $originalNumber = $number = $position->getNumber();
         $result = [];
+
+        $result[] = new Notation(new Position($letter, $number), new Position($letter, $number));
+
         if($step){
             $newLetter = self::calculateLetter($letter, $right);
             $newNumber = $number + $up;
@@ -43,7 +46,7 @@ class Board {
             $result[] = new Notation(new Position($letter, $number), new Position($newLetter, $newNumber));
             return $result;
         }
-        while($board->getPieceFromPosition(new Position($letter, $number)) !== null){
+        while(true){
             $newLetter = self::calculateLetter($letter, $right);
             $newNumber = $number + $up;
 
@@ -55,8 +58,14 @@ class Board {
             }
 
             $result[] = new Notation(new Position($letter, $number), new Position($newLetter, $newNumber));
+
+
             $letter = $newLetter;
             $number = $newNumber;
+
+            if ($board->getPieceFromPosition(new Position($letter, $number)) !== null) {
+                break;
+            }
         }
         $result[] = new Notation(new Position($originalLetter, $originalNumber), new Position($letter, $number));
         return $result;
@@ -101,8 +110,7 @@ class Board {
     }
 
     public function viewTerminal(): void {
-        echo "-------------------------------------".PHP_EOL;
-        echo "  [a ][b ][c ][d ][e ][f ][g ][h ]".PHP_EOL;
+        echo "   a   b   c   d   e   f   g   h".PHP_EOL;
         for ($numberVal = 8; $numberVal>0; $numberVal--) {
             echo $numberVal." ";
             for ($letterVal = 0; $letterVal<8; $letterVal++) {
@@ -116,8 +124,7 @@ class Board {
             }
             echo PHP_EOL;
         }
-        echo "  [a ][b ][c ][d ][e ][f ][g ][h ]".PHP_EOL;
-        echo "-------------------------------------".PHP_EOL;
+        echo "   a   b   c   d   e   f   g   h".PHP_EOL;
         echo PHP_EOL.PHP_EOL;
     }
 
@@ -146,10 +153,10 @@ class Board {
     }
 
     public static function calculateDiagonal(Position $position, Board $board, bool $step = false) {
-        $resultOne = self::walkDiagonal($position, $board, $step, 1, 1);
-        $resultTwo = self::walkDiagonal($position, $board, $step, 1, -1);
-        $resultThree = self::walkDiagonal($position, $board, $step, -1, 1);
-        $resultFour = self::walkDiagonal($position, $board, $step, -1, -1);
+        $resultOne = self::walkDiagonal($position, $board, $step);
+        $resultTwo = self::walkDiagonal($position, $board, $step, up: -1);
+        $resultThree = self::walkDiagonal($position, $board, $step, right: -1);
+        $resultFour = self::walkDiagonal($position, $board, $step, right: -1, up: -1);
 
         return array_merge($resultOne, $resultTwo, $resultThree, $resultFour);
     }
@@ -304,20 +311,17 @@ class Board {
         $kingPiece = $this->getPieceFromPosition($king);
         assert($kingPiece !== null);
 
-        
         $diagonals = self::calculateDiagonal($king, $this);
-        
+
         $diagonalShorts = self::calculateDiagonal($king, $this, true);
-        
+
         $straights = self::calculateStraights($king, $this);
-        
+
         $knights = self::calculateKnights($king, $this);
-        
 
         $checks = [];
 
         foreach ($diagonals as $diagonal) {
-            
             assert ($diagonal instanceof Notation);
             $piece = $this->getPieceFromPosition($diagonal->getTo());
             if ($piece === null) {
@@ -331,7 +335,6 @@ class Board {
         }
 
         foreach ($diagonalShorts as $diagonal) {
-            
             assert ($diagonal instanceof Notation);
             $piece = $this->getPieceFromPosition($diagonal->getTo());
             if ($piece === null) {
