@@ -101,8 +101,8 @@ class Board {
     }
 
     public function viewTerminal(): void {
-        echo "  [aC][bC][cC][dC][eC][fC][gC][hC]".PHP_EOL;
-        echo "----------------------------------------------------".PHP_EOL;
+        echo "-------------------------------------".PHP_EOL;
+        echo "  [a ][b ][c ][d ][e ][f ][g ][h ]".PHP_EOL;
         for ($numberVal = 8; $numberVal>0; $numberVal--) {
             echo $numberVal." ";
             for ($letterVal = 0; $letterVal<8; $letterVal++) {
@@ -116,8 +116,8 @@ class Board {
             }
             echo PHP_EOL;
         }
-        echo "----------------------------------------------------".PHP_EOL;
-        echo "  [aC][bC][cC][dC][eC][fC][gC][hC]".PHP_EOL;
+        echo "  [a ][b ][c ][d ][e ][f ][g ][h ]".PHP_EOL;
+        echo "-------------------------------------".PHP_EOL;
         echo PHP_EOL.PHP_EOL;
     }
 
