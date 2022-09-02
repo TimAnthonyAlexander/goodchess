@@ -1,0 +1,21 @@
+{
+    "name": "timprojekt/real-chess",
+    "autoload": {
+        "classmap": [
+            "./"
+        ]
+    },
+    "authors": [
+        {
+            "name": "TimAnthonyAlexander",
+            "email": "github@timanthonyalexander.de"
+        }
+    ],
+    "require": {
+        "ramsey/uuid": "^4.4"
+    }
+    ,
+    "require-dev": {
+        "roave/security-advisories": "dev-latest"
+    }
+}
