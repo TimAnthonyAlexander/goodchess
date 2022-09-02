@@ -100,6 +100,7 @@ class Game {
                 $eval = round(TimFish::evaluateWhiteVsBlack($board), 3);
                 $after = round(microtime(true) - $before, 2);
                 print "Evaluation: " . $eval . " (" . $after . "s)".PHP_EOL;
+                print count(TimFish::allPossibleMoves($board));
             }
         }
     }

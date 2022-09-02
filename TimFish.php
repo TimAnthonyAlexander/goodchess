@@ -40,8 +40,12 @@ class TimFish{
     }
 
     private static function getMovesCached(Board $board, bool $color): array {
+        $md5 = $board->md5Board();
+        $cacheName = 'moves_' . $md5 . '_' . ($color ? 'w' : 'b');
 
-        $cache = new Cache();
+        if (isset($GLOBALS['moveCache'][$cacheName])) {
+            return $GLOBALS['moveCache'][$cacheName];
+        }
 
         $pieces = $board->getPieces($color, true);
         $rules = new Rules();
@@ -49,8 +53,10 @@ class TimFish{
 
         foreach($pieces as $piece){
             assert($piece instanceof Position);
-            $moves = $rules->getAllMovesForPiece($board, $piece);
+            $moves[] = $rules->getAllMovesForPiece($board, $piece);
         }
+
+        $GLOBALS['moveCache'][$cacheName] = $moves;
 
         return $moves;
     }
@@ -93,15 +99,35 @@ class TimFish{
         return $return;
     }
 
-    public static function evaluateWhiteVsBlack(Board $board): float{
+    public static function evaluateWhiteVsBlack(Board $board, bool $forWhite = true): float{
         $white = self::evaluate($board, true);
         $black = self::evaluate($board, false);
 
-        return $white - $black;
+        return $forWhite ? $white - $black : $black - $white;
     }
 
-    public static function bestMove(Board $board, bool $color = true, int $depth = 1, int $i = 0): Notation
-    {
-        $allMoves =
+    public static function allPossibleMoves(Board $board, bool $color = true, int $depth = 1, int $i = 0): array {
+        $moves = self::getMovesCached($board, $color);
+
+        $return = [];
+
+        if ($i === $depth) {
+            return $moves;
+        }
+
+        foreach($moves as $piece){
+            if (is_array($piece)){
+                foreach($piece as $move){
+                    assert($move instanceof Notation);
+                    $fakeBoard = $board->makeBoardOfChanges(false, $move);
+
+                    $moves = array_merge($moves, self::allPossibleMoves($fakeBoard, !$color, $depth, $i + 1));
+                }
+            }
+        }
+
+
+        return $return;
     }
+
 }
