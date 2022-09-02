@@ -164,6 +164,7 @@ return array(
     'RealChess\\Piece' => $baseDir . '/Piece.php',
     'RealChess\\Position' => $baseDir . '/Position.php',
     'RealChess\\Rules' => $baseDir . '/Rules.php',
+    'RealChess\\TimFish' => $baseDir . '/TimFish.php',
     'ReturnTypeWillChange' => $vendorDir . '/symfony/polyfill-php81/Resources/stubs/ReturnTypeWillChange.php',
     'Symfony\\Polyfill\\Php81\\Php81' => $vendorDir . '/symfony/polyfill-php81/Php81.php',
 );

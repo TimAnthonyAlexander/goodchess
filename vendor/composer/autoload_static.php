@@ -205,6 +205,7 @@ class ComposerStaticInit65fba8ca67d76d506ccf4e32825448c5
         'RealChess\\Piece' => __DIR__ . '/../..' . '/Piece.php',
         'RealChess\\Position' => __DIR__ . '/../..' . '/Position.php',
         'RealChess\\Rules' => __DIR__ . '/../..' . '/Rules.php',
+        'RealChess\\TimFish' => __DIR__ . '/../..' . '/TimFish.php',
         'ReturnTypeWillChange' => __DIR__ . '/..' . '/symfony/polyfill-php81/Resources/stubs/ReturnTypeWillChange.php',
         'Symfony\\Polyfill\\Php81\\Php81' => __DIR__ . '/..' . '/symfony/polyfill-php81/Php81.php',
     );

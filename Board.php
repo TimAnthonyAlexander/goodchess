@@ -7,6 +7,9 @@ use Ramsey\Uuid\Uuid;
 class Board {
     private array $board;
 
+    /**
+     *
+     */
     public function __construct(){
         for ($letterVal = 0; $letterVal<8; $letterVal++) {
             for ($numberVal = 0; $numberVal<8; $numberVal++) {
@@ -71,6 +74,9 @@ class Board {
         return $result;
     }
 
+    /**
+     * @return void
+     */
     public function initializeDefaultBoard(): void {
         // White
         $this->board['a'][1] = new Piece(['piece' => 'R', 'color' => true, 'uuid' => Uuid::uuid4()->toString()]);
@@ -109,6 +115,9 @@ class Board {
         }
     }
 
+    /**
+     * @return void
+     */
     public function viewTerminal(): void {
         echo "   a   b   c   d   e   f   g   h".PHP_EOL;
         for ($numberVal = 8; $numberVal>0; $numberVal--) {
@@ -128,6 +137,11 @@ class Board {
         echo PHP_EOL.PHP_EOL;
     }
 
+    /**
+     * @param Piece $piece
+     * @param Position $pos
+     * @return void
+     */
     public function setPiece(Piece $piece, Position $pos): void {
         $this->board[$pos->getLetter()][$pos->getNumber()] = [
             "uuid" => $piece->getUuid(),
@@ -136,6 +150,11 @@ class Board {
         ];
     }
 
+    /**
+     * @param Notation $notation
+     * @return void
+     * @throws \Exception
+     */
     public function movePiece(Notation $notation): void {
         $piece = $this->getPieceFromPosition($notation->getFrom());
 
@@ -148,10 +167,20 @@ class Board {
         $this->setPiece($piece, $notation->getTo());
     }
 
+    /**
+     * @param Position $pos
+     * @return void
+     */
     public function clearPiece(Position $pos): void {
         $this->board[$pos->getLetter()][$pos->getNumber()] = null;
     }
 
+    /**
+     * @param Position $position
+     * @param Board $board
+     * @param bool $step
+     * @return array
+     */
     public static function calculateDiagonal(Position $position, Board $board, bool $step = false) {
         $resultOne = self::walkDiagonal($position, $board, $step);
         $resultTwo = self::walkDiagonal($position, $board, $step, up: -1);
@@ -161,16 +190,50 @@ class Board {
         return array_merge($resultOne, $resultTwo, $resultThree, $resultFour);
     }
 
+    /**
+     * @param Position $position
+     * @param Board $board
+     * @param bool $step
+     * @param $right
+     * @param $up
+     * @return array
+     */
     public static function walkDiagonal(Position $position, Board $board, bool $step, $right = 1, $up = 1): array {
         return self::walk($position, $step, $right, $up, $board);
     }
 
+    /**
+     * @param string $letter
+     * @param int $right
+     * @return string
+     */
     public static function calculateLetter(string $letter = 'a', int $right = 1): string {
         $letter = strtolower($letter);
 
         return chr(ord($letter) + $right);
     }
 
+    /**
+     * @param bool $color
+     * @return array<int, Piece>
+     */
+    public function getPieces(bool $color): array {
+        $pieces = [];
+        foreach ($this->board as $row) {
+            foreach ($row as $piece) {
+                if ($piece !== null && $piece['color'] === $color) {
+                    $pieces[] = new Piece($piece);
+                }
+            }
+        }
+
+        return $pieces;
+    }
+
+    /**
+     * @param Position $pos
+     * @return Piece|null
+     */
     public function getPieceFromPosition(Position $pos): ?Piece {
         if (!isset($this->board[$pos->getLetter()][$pos->getNumber()])) {
             return null;
@@ -182,6 +245,12 @@ class Board {
         return new Piece($this->board[$pos->getLetter()][$pos->getNumber()]);
     }
 
+    /**
+     * @param bool $checkChanges
+     * @param Notation ...$change
+     * @return Board
+     * @throws \Exception
+     */
     public function makeBoardOfChanges(bool $checkChanges = false, Notation ...$change): Board {
         $board = clone $this;
         $rules = new Rules();
@@ -194,6 +263,9 @@ class Board {
         return $board;
     }
 
+    /**
+     * @return array
+     */
     public function anyChecks(): array {
         $kings = [];
 
@@ -214,6 +286,12 @@ class Board {
         return $checks;
     }
 
+    /**
+     * @param Position $start
+     * @param Position $end
+     * @param Board $board
+     * @return array
+     */
     public static function walkDiagonalBetween(Position $start, Position $end, Board $board): array {
         $result = [];
         $up = $start->getNumber() < $end->getNumber() ? 1 : -1;
@@ -230,6 +308,12 @@ class Board {
         return $result;
     }
 
+    /**
+     * @param Position $position
+     * @param Board $board
+     * @param bool $step
+     * @return array
+     */
     public static function calculateStraights(Position $position, Board $board, bool $step = false): array {
         $resultOne = self::calculateStraight($position, $board, $step, true);
         $resultTwo = self::calculateStraight($position, $board, $step, false);
@@ -237,6 +321,13 @@ class Board {
         return array_merge($resultOne, $resultTwo);
     }
 
+    /**
+     * @param Position $position
+     * @param Board $board
+     * @param bool $step
+     * @param bool $horizontal
+     * @return array
+     */
     public static function calculateStraight(Position $position, Board $board, bool $step, bool $horizontal): array {
         // If horizontal check left and right to the $position->getLetter()
         // Else check up and down
@@ -251,6 +342,12 @@ class Board {
         return $result;
     }
 
+    /**
+     * @param Position $positionOne
+     * @param Position $positionTwo
+     * @param Board $board
+     * @return array
+     */
     public static function calculateStraightBetween(Position $positionOne, Position $positionTwo, Board $board): array {
         if ($positionOne->getLetter() === $positionTwo->getLetter()) {
             $numberDirection = $positionOne->getNumber() < $positionTwo->getNumber() ? 1 : -1;
@@ -265,6 +362,14 @@ class Board {
         return $result;
     }
 
+    /**
+     * @param Position $start
+     * @param Position $end
+     * @param Board $board
+     * @param int $direction
+     * @param int $extraDirection
+     * @return array
+     */
     public static function walkStraightBetween(Position $start, Position $end, Board $board, int $direction, int $extraDirection): array {
         $result = [];
         $letter = $start->getLetter();
@@ -287,6 +392,11 @@ class Board {
         return $result;
     }
 
+    /**
+     * @param Position $position
+     * @param Board $board
+     * @return array
+     */
     public static function calculateKnights(Position $position, Board $board): array {
         $result = [];
         $result = array_merge($result, self::walkKnight($position, $board, 1, 2));
@@ -299,14 +409,33 @@ class Board {
         return array_merge($result, self::walkKnight($position, $board, -2, -1));
     }
 
+    /**
+     * @param Position $position
+     * @param Board $board
+     * @param int $right
+     * @param int $up
+     * @return array
+     */
     public static function walkKnight(Position $position, Board $board, int $right, int $up): array {
         return self::walk($position, false, $right, $up, $board);
     }
 
+    /**
+     * @param Position $position
+     * @param Board $board
+     * @param bool $step
+     * @param int $right
+     * @param int $up
+     * @return array
+     */
     public static function walkStraight(Position $position, Board $board, bool $step = false, int $right = 0, int $up = 0): array {
         return self::walk($position, $step, $right, $up, $board);
     }
 
+    /**
+     * @param Position $king
+     * @return array
+     */
     public function calculateChecksForKing(Position $king): array {
         $kingPiece = $this->getPieceFromPosition($king);
         assert($kingPiece !== null);

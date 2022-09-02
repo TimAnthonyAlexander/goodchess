@@ -93,6 +93,8 @@ class Game {
                 if (isset($GLOBALS['checked']) && $GLOBALS['checked']) {
                     print "CHECKED!".PHP_EOL;
                 }
+                $eval = TimFish::evaluateWhiteVsBlack($board);
+                print "Evaluation: " . $eval . PHP_EOL;
             }
         }
     }

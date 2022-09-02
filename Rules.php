@@ -19,6 +19,11 @@ class Rules{
 
     public const PAWN_RULES = ["PAWN_STEP", "PAWN_DOUBLE_STEP", "DIAGONAL_STEP_TAKE", "PAWN_EN_PASSANT"];
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     public function isValidFor(Notation $notation, Board $board): bool{
         $piece = $board->getPieceFromPosition($notation->getFrom());
 
@@ -49,6 +54,13 @@ class Rules{
         return false;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @param string $ruleName
+     * @return bool
+     * @throws \Exception
+     */
     public function checkRule(Notation $notation, Board $board, string $ruleName): bool{
         if(!method_exists($this, $ruleName)){
             print "Rule $ruleName does not exist" . PHP_EOL;
@@ -122,6 +134,11 @@ class Rules{
         return $return;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function PAWN_STEP(Notation $notation, Board $board): bool{
         $from = $notation->getFrom();
         $to = $notation->getTo();
@@ -147,6 +164,11 @@ class Rules{
         return true;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function PAWN_DOUBLE_STEP(Notation $notation, Board $board): bool{
         $from = $notation->getFrom();
         $to = $notation->getTo();
@@ -181,6 +203,11 @@ class Rules{
         return true;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function DIAGONAL_STEP_TAKE(Notation $notation, Board $board): bool{
         $from = $notation->getFrom();
         $to = $notation->getTo();
@@ -213,6 +240,12 @@ class Rules{
         return true;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @param array|null $anychecks
+     * @return bool
+     */
     private function checkCheck(
         Notation $notation,
         Board $board,
@@ -251,6 +284,11 @@ class Rules{
         return $allowedBecauseChecks;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function DIAGONAL_STEP(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
@@ -278,6 +316,11 @@ class Rules{
         return true;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function DIAGONAL_ALL(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
@@ -306,6 +349,11 @@ class Rules{
         return true;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function DIAGONAL_ALL_TAKE(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
@@ -335,6 +383,11 @@ class Rules{
         return $count === 1 && $positions[count($positions) - 1]->equals($to);
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function LINEAR_ALL(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
@@ -363,6 +416,11 @@ class Rules{
         return true;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function LINEAR_ALL_TAKE(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
@@ -393,6 +451,11 @@ class Rules{
         return $count === 1 && $positions[count($positions) - 1]->equals($to);
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function LINEAR_STEP(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
@@ -420,6 +483,11 @@ class Rules{
         return true;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function LINEAR_STEP_TAKE(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
@@ -447,6 +515,11 @@ class Rules{
         return true;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function KNIGHT_STEP(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
@@ -472,7 +545,12 @@ class Rules{
         return true;
     }
 
-private function KNIGHT_STEP_TAKE(Notation $notation, Board $board): bool
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
+    private function KNIGHT_STEP_TAKE(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
         $to = $notation->getTo();
@@ -500,6 +578,11 @@ private function KNIGHT_STEP_TAKE(Notation $notation, Board $board): bool
         return true;
     }
 
+    /**
+     * @param Notation $notation
+     * @param Board $board
+     * @return bool
+     */
     private function CASTLE(Notation $notation, Board $board): bool
     {
         $from = $notation->getFrom();
