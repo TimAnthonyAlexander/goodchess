@@ -302,7 +302,7 @@ class Board {
         $rules = new Rules();
         foreach ($change as $move) {
             if ($checkChanges) {
-                $rules->isValidFor($move, $board);
+                $rules->isValidFor($move, $board, isFake: $checkChanges);
             }
             $board->movePiece($move);
         }
@@ -311,6 +311,7 @@ class Board {
 
     /**
      * @return array
+     * @throws Exception
      */
     public function anyChecks(): array {
         $kings = [];
@@ -351,8 +352,9 @@ class Board {
             }
             $letter = self::calculateLetter($letter, $right);
             $number += $up;
+            $result[] = new Position($letter, $number);
             if ($board->getPieceFromPosition(new Position($letter, $number)) !== null) {
-                $result[] = new Position($letter, $number);
+                break;
             }
             $count++;
         }
@@ -532,7 +534,6 @@ class Board {
         }
 
         foreach ($straights as $straight) {
-            
             assert ($straight instanceof Notation);
             $piece = $this->getPieceFromPosition($straight->getTo());
             if ($piece === null) {
@@ -546,7 +547,6 @@ class Board {
         }
 
         foreach ($knights as $knight) {
-            
             assert ($knight instanceof Notation);
             $piece = $this->getPieceFromPosition($knight->getTo());
             if ($piece === null) {

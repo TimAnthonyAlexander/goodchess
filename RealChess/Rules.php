@@ -28,7 +28,7 @@ class Rules{
      * @return bool
      * @throws Exception
      */
-    public function isValidFor(Notation $notation, Board $board, string $overridePiece = null): bool{
+    public function isValidFor(Notation $notation, Board $board, string $overridePiece = null, bool $isFake = false): bool{
         $piece = $board->getPieceFromPosition($notation->getFrom());
 
         if($piece === null){
@@ -61,7 +61,7 @@ class Rules{
         };
 
         foreach($rules as $rule){
-            if($this->checkRule($notation, $board, $rule)){
+            if($this->checkRule($notation, $board, $rule, $isFake)){
                 return true;
             }
         }
@@ -76,7 +76,7 @@ class Rules{
      * @return bool
      * @throws Exception
      */
-    public function checkRule(Notation $notation, Board $board, string $ruleName): bool{
+    public function checkRule(Notation $notation, Board $board, string $ruleName, bool $isFake = false): bool{
         if(!method_exists($this, $ruleName)){
             return false;
         }
@@ -85,40 +85,28 @@ class Rules{
 
         $fakeBoard = $board->makeBoardOfChanges(false, $notation);
 
-        if ($fakeBoard->anyChecks() !== []) {
-            foreach ($fakeBoard->anyChecks() as $check) {
+        $GLOBALS['checked'] = false;
+
+        if (!$isFake){
+            foreach($fakeBoard->anyChecks() as $check){
                 [, $checkedPiecePos] = $check;
                 // If the checked Piece color is the same as the color of the piece that is moving, it is not a valid move
                 $movingPiece = $board->getPieceFromPosition($notation->getFrom());
 
                 assert($movingPiece !== null);
 
-                if ($movingPiece->getColor() === $fakeBoard->getPieceFromPosition($checkedPiecePos)->getColor()) {
+                $checkedPiece = $fakeBoard->getPieceFromPosition($checkedPiecePos);
+                assert($checkedPiece !== null);
+
+                if($movingPiece->getColor() === $checkedPiece->getColor()){
                     return false;
                 }
+                $GLOBALS['checked'] = true;
             }
-            $GLOBALS['checked'] = true;
-        } else {
-            $GLOBALS['checked'] = false;
-        }
 
-        if ($anyChecks !== []) {
-            foreach ($anyChecks as $anyCheck) {
-                [$checkingPiecePos, $checkedPiecePos] = $anyCheck;
-                assert($checkingPiecePos instanceof Position);
-                assert($checkedPiecePos instanceof Position);
-
-                $checkingPiece = $board->getPieceFromPosition($checkingPiecePos);
-                $checkedPiece = $board->getPieceFromPosition($checkedPiecePos);
-
-                print "Check!".PHP_EOL;
-                print "Checking piece: " . $checkingPiece . $checkingPiecePos . PHP_EOL;
-                print "Checked piece: " . $checkedPiece . $checkedPiecePos . PHP_EOL;
+            if(!$this->checkCheck($notation, $board, $anyChecks)){
+                return false;
             }
-        }
-
-        if (!$this->checkCheck($notation, $board, $anyChecks)) {
-            return false;
         }
 
         $return = $this->$ruleName($notation, $board);
@@ -149,6 +137,51 @@ class Rules{
     /**
      * @param Notation $notation
      * @param Board $board
+     * @param array|null $anychecks
+     * @return bool
+     * @throws Exception
+     */
+    private function checkCheck(
+        Notation $notation,
+        Board $board,
+        array $anychecks = null
+    ): bool{
+        $afterMoveBoard = $board->makeBoardOfChanges(false, $notation);
+        $alreadyChecks = $anychecks ?? $board->anyChecks();
+        $afterMoveChecks = $afterMoveBoard->anyChecks();
+
+        $allowedBecauseChecks = true;
+
+        $movingPiece = $board->getPieceFromPosition($notation->getFrom());
+        assert($movingPiece instanceof Piece);
+
+        if ($alreadyChecks !== []) {
+            // There are checks before the move $notation. Now we got to check if that check is still there after the move.
+            // If it is, then the move is not allowed.
+
+            foreach ($afterMoveChecks as $afterMoveCheck) {
+                [$checkingPiece, $checkedPiece] = $afterMoveCheck;
+                assert($checkingPiece instanceof Position);
+                assert($checkedPiece instanceof Position);
+
+                foreach ($alreadyChecks as $alreadyCheck) {
+                    [$alreadyCheckingPiece, $alreadyCheckedPiece] = $alreadyCheck;
+                    assert($alreadyCheckingPiece instanceof Position);
+                    assert($alreadyCheckedPiece instanceof Position);
+
+                    if ($alreadyCheckingPiece->equals($checkingPiece) && $alreadyCheckedPiece->equals($checkedPiece)) {
+                        $allowedBecauseChecks = false;
+                    }
+                }
+            }
+        }
+
+        return $allowedBecauseChecks;
+    }
+
+    /**
+     * @param Notation $notation
+     * @param Board $board
      * @return bool
      */
     private function PAWN_STEP(Notation $notation, Board $board): bool{
@@ -159,6 +192,14 @@ class Rules{
         assert($piece !== null);
 
         $attackingColor = $piece->getColor();
+
+        if ($attackingColor) {
+            if ($to->getNumber() < $from->getNumber()) {
+                return false;
+            }
+        } else if ($to->getNumber() > $from->getNumber()) {
+            return false;
+        }
 
         if($board->getPieceFromPosition($to) !== null){
             return false;
@@ -221,16 +262,11 @@ class Rules{
      * @return bool
      */
     private function DIAGONAL_STEP_TAKE(Notation $notation, Board $board): bool{
-        $from = $notation->getFrom();
-        $to = $notation->getTo();
-        $piece = $board->getPieceFromPosition($from);
-        $toPiece = $board->getPieceFromPosition($to);
-
-        assert($piece !== null);
-
-        if($toPiece === null){
+        if (!$this->take($notation, $board)) {
             return false;
         }
+
+        [$from, $to, $piece, $toPiece] = $this->take($notation, $board);
 
         $attackingColor = $piece->getColor();
         $toColor = $toPiece->getColor();
@@ -250,50 +286,6 @@ class Rules{
         }
 
         return true;
-    }
-
-    /**
-     * @param Notation $notation
-     * @param Board $board
-     * @param array|null $anychecks
-     * @return bool
-     */
-    private function checkCheck(
-        Notation $notation,
-        Board $board,
-        array $anychecks = null
-    ): bool{
-        $afterMoveBoard = $board->makeBoardOfChanges(false, $notation);
-        $alreadyChecks = $anychecks ?? $board->anyChecks();
-        $afterMoveChecks = $afterMoveBoard->anyChecks();
-
-        $allowedBecauseChecks = true;
-
-        $movingPiece = $board->getPieceFromPosition($notation->getFrom());
-        assert($movingPiece instanceof Piece);
-
-        if ($alreadyChecks !== []) {
-            // There are checks before the move $notation. Now we got to check if that check is still there after the move.
-            // If it is, then the move is not allowed.
-
-            foreach ($afterMoveChecks as $afterMoveCheck) {
-                [$checkingPiece, $checkedPiece] = $afterMoveCheck;
-                assert($checkingPiece instanceof Position);
-                assert($checkedPiece instanceof Position);
-
-                foreach ($alreadyChecks as $alreadyCheck) {
-                    [$alreadyCheckingPiece, $alreadyCheckedPiece] = $alreadyCheck;
-                    assert($alreadyCheckingPiece instanceof Position);
-                    assert($alreadyCheckedPiece instanceof Position);
-
-                    if ($alreadyCheckingPiece->equals($checkingPiece) && $alreadyCheckedPiece->equals($checkedPiece)) {
-                        $allowedBecauseChecks = false;
-                    }
-                }
-            }
-        }
-
-        return $allowedBecauseChecks;
     }
 
     /**
@@ -350,18 +342,44 @@ class Rules{
         // Calculate all steps between $from and $to
         $positions = Board::walkDiagonalBetween($from, $to, $board);
 
+        $positionArray = [];
+
         foreach ($positions as $position) {
             assert($position instanceof Position);
 
             if ($board->getPieceFromPosition($position) !== null) {
                 return false;
             }
+
+            $positionArray[] = [$position->getLetter(), $position->getNumber()];
         }
 
-        if (!in_array($to, $positions, true)) {
+        if (!in_array([$to->getLetter(), $to->getNumber()], $positionArray, true)) {
             return false;
         }
+
         return true;
+    }
+
+    private function take(Notation $notation, Board $board): false|array
+    {
+        $from = $notation->getFrom();
+        $to = $notation->getTo();
+        $fromPiece = $board->getPieceFromPosition($from);
+
+        assert($fromPiece !== null);
+
+        $toPiece = $board->getPieceFromPosition($to);
+
+        if ($toPiece === null) {
+            return false;
+        }
+
+        if ($toPiece->getColor() === $fromPiece->getColor()) {
+            return false;
+        }
+
+        return [$from, $to, $fromPiece, $toPiece];
     }
 
     /**
@@ -371,32 +389,31 @@ class Rules{
      */
     private function DIAGONAL_ALL_TAKE(Notation $notation, Board $board): bool
     {
-        $from = $notation->getFrom();
-        $to = $notation->getTo();
-        $piece = $board->getPieceFromPosition($from);
-
-        assert($piece !== null);
-
-        $toPiece = $board->getPieceFromPosition($to);
-
-        if ($toPiece === null) {
+        if (!$this->take($notation, $board)) {
             return false;
         }
 
-        if ($toPiece->getColor() === $piece->getColor()) {
-            return false;
-        }
+        [$from, $to, $piece, $toPiece] = $this->take($notation, $board);
 
         // Calculate all steps between $from and $to
         $positions = Board::walkDiagonalBetween($from, $to, $board);
 
         $count = 0;
+
+        $positionArray = [];
+
         foreach ($positions as $position) {
             assert($position instanceof Position);
 
             if ($board->getPieceFromPosition($position) !== null) {
                 $count++;
             }
+
+            $positionArray[] = [$position->getLetter(), $position->getNumber()];
+        }
+
+        if (!in_array([$to->getLetter(), $to->getNumber()], $positionArray, true)) {
+            return false;
         }
 
         return $count === 1 && $positions[count($positions) - 1]->equals($to);
@@ -417,7 +434,7 @@ class Rules{
 
         $toPiece = $board->getPieceFromPosition($to);
 
-        if ($toPiece === null) {
+        if ($toPiece !== null) {
             return false;
         }
 
@@ -442,26 +459,19 @@ class Rules{
      */
     private function LINEAR_ALL_TAKE(Notation $notation, Board $board): bool
     {
-        $from = $notation->getFrom();
-        $to = $notation->getTo();
-        $piece = $board->getPieceFromPosition($from);
-
-        assert($piece !== null);
-
-        $toPiece = $board->getPieceFromPosition($to);
-
-        if ($toPiece === null) {
+        if (!$this->take($notation, $board)) {
             return false;
         }
 
-        if ($toPiece->getColor() === $piece->getColor()) {
-            return false;
-        }
+        [$from, $to, ] = $this->take($notation, $board);
 
         // Calculate all steps between $from and $to
         $positions = Board::calculateStraightBetween($from, $to, $board);
 
         $count = 0;
+
+        $positionArray = [];
+
         foreach ($positions as $position) {
             assert($position instanceof Position);
 
@@ -469,6 +479,12 @@ class Rules{
             if ($board->getPieceFromPosition($position) !== null) {
                 $count++;
             }
+
+            $positionArray[] = [$position->getLetter(), $position->getNumber()];
+        }
+
+        if (!in_array([$to->getLetter(), $to->getNumber()], $positionArray, true)) {
+            return false;
         }
 
         return $count === 1 && $positions[count($positions) - 1]->equals($to);
@@ -526,14 +542,13 @@ class Rules{
         }
 
         // Check distance traveled for $letter to be 1
-        if (Board::calculateLetter($from->getLetter(), 1) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -1) !== $to->getLetter()) {
+        if (($from->getLetter() === $to->getLetter()) && abs($from->getNumber() - $to->getNumber()) !== 1){
+            return false;
+        }
+        if (($from->getNumber() === $to->getNumber()) && Board::calculateLetter($from->getLetter(), 1) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -1) !== $to->getLetter()){
             return false;
         }
 
-        // Check distance traveled for $number to be 1
-        if (abs($from->getNumber() - $to->getNumber()) !== 1) {
-            return false;
-        }
 
         return true;
     }
@@ -568,21 +583,11 @@ class Rules{
      */
     private function KNIGHT_STEP_TAKE(Notation $notation, Board $board): bool
     {
-        $from = $notation->getFrom();
-        $to = $notation->getTo();
-        $piece = $board->getPieceFromPosition($from);
-
-        assert($piece !== null);
-
-        $toPiece = $board->getPieceFromPosition($to);
-
-        if ($toPiece === null) {
+        if (!$this->take($notation, $board)) {
             return false;
         }
 
-        if ($piece->getColor() === $toPiece->getColor()) {
-            return false;
-        }
+        [$from, $to, ,] = $this->take($notation, $board);
 
         // If distance for $letter is not 1 and $number 2 and for $letter 2 and $number 1 return false
         return $this->knight_move($from, $to);
@@ -708,7 +713,7 @@ class Rules{
         foreach ($straights as $straight) {
             assert($straight instanceof Notation);
 
-            if ($this->isValidFor($straight, $board, $override ?? 'R')) {
+            if ($this->isValidFor($straight, $board, $override ?? 'R', true)) {
                 $moves[] = $straight;
             }
         }
