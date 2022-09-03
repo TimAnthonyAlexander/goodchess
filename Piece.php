@@ -36,6 +36,14 @@ class Piece{
         $this->name = $name;
     }
 
+    public static function create(string $piece, bool $color): self {
+        return new self([
+            'uuid' => Uuid::uuid4()->toString(),
+            'name' => $piece,
+            'color' => $color,
+        ]);
+    }
+
     public function __construct(array $data) {
         $this->uuid = $data['uuid'];
         $this->name = $data['piece'];
