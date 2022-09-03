@@ -2,6 +2,8 @@
 namespace RealChess;
 
 
+use JsonException;
+
 class Cache{
     public function __construct() {
         if (!isset($GLOBALS['cache'])) {
@@ -10,7 +12,7 @@ class Cache{
     }
 
     /**
-     * @throws \JsonException
+     * @throws JsonException
      */
     public function load(): void {
         if (!file_exists('cache.json')) {
@@ -19,6 +21,9 @@ class Cache{
         $GLOBALS['cache'] = json_decode(file_get_contents("cache.json"), true, 512, JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * @throws JsonException
+     */
     public function save(): void {
         file_put_contents("cache.json", json_encode($GLOBALS['cache'], JSON_THROW_ON_ERROR));
     }

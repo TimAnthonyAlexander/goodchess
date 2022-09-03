@@ -2,6 +2,8 @@
 namespace RealChess;
 
 
+use Exception;
+
 class Rules{
     /*
      * All these rules in the constants have a function in the Rules class
@@ -24,7 +26,7 @@ class Rules{
      * @param Board $board
      * @param string|null $overridePiece
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     public function isValidFor(Notation $notation, Board $board, string $overridePiece = null): bool{
         $piece = $board->getPieceFromPosition($notation->getFrom());
@@ -72,7 +74,7 @@ class Rules{
      * @param Board $board
      * @param string $ruleName
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     public function checkRule(Notation $notation, Board $board, string $ruleName): bool{
         if(!method_exists($this, $ruleName)){
@@ -356,6 +358,9 @@ class Rules{
             }
         }
 
+        if (!in_array($to, $positions, true)) {
+            return false;
+        }
         return true;
     }
 
@@ -375,6 +380,10 @@ class Rules{
         $toPiece = $board->getPieceFromPosition($to);
 
         if ($toPiece === null) {
+            return false;
+        }
+
+        if ($toPiece->getColor() === $piece->getColor()) {
             return false;
         }
 

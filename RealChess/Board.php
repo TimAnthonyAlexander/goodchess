@@ -69,7 +69,7 @@ class Board {
             $result[] = new Notation(new Position($letter, $number), new Position($newLetter, $newNumber));
             return $result;
         }
-        while(true){
+        for ($i = 0; $i < 8; $i++){
             $newLetter = self::calculateLetter($letter, $right);
             $newNumber = $number + $up;
 
@@ -344,12 +344,17 @@ class Board {
         $right = $start->getLetter() < $end->getLetter() ? 1 : -1;
         $letter = $start->getLetter();
         $number = $start->getNumber();
+        $count = 0;
         while ($letter !== $end->getLetter() || $number !== $end->getNumber()) {
+            if ($count === 8) {
+                break;
+            }
             $letter = self::calculateLetter($letter, $right);
             $number += $up;
             if ($board->getPieceFromPosition(new Position($letter, $number)) !== null) {
                 $result[] = new Position($letter, $number);
             }
+            $count++;
         }
         return $result;
     }

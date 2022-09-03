@@ -4,6 +4,8 @@ namespace RealChess;
 
 class Game {
     public static function start(bool $interactive = false): void{
+        ini_set('max_execution_time', '4');
+
         // If session is not set, start session
         if(!isset($_SESSION)){
             session_start();
@@ -100,7 +102,6 @@ class Game {
                 $eval = round(TimFish::evaluateWhiteVsBlack($board), 3);
                 $after = round(microtime(true) - $before, 2);
                 print "Evaluation: " . $eval . " (" . $after . "s)".PHP_EOL;
-                print count(TimFish::allPossibleMoves($board));
             }
         }
     }
