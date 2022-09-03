@@ -1,134 +1,169 @@
-<?php /** @noinspection ALL */
-
+<?php
 namespace RealChess;
 
 
-class TimFish{
-    public const WEIGHTS = ['P' => 100, 'N' => 320, 'B' => 330, 'R' => 500, 'Q' => 900, 'K' => 20000];
+use Exception;
 
-    public const RULEWEIGHTS = ['check' => 150, 'checkmate' => 100000, 'piececount' => 1, 'movecount' => 0.05,];
+class TimFish {
 
-    public static function countMaterial(Board $board, bool $color): int{
-        $material = 0;
-        $pieces = $board->getPieces($color);
-        foreach($pieces as $piece){
-            assert($piece instanceof Piece);
-            $material += self::WEIGHTS[$piece->getName()] * self::RULEWEIGHTS['piececount'];
-        }
+    private const VALUE = [
+        'P' => 1,
+        'N' => 3.2,
+        'B' => 3.3,
+        'R' => 5,
+        'Q' => 9,
+        'K' => 200,
+    ];
 
-        return $material;
-    }
-
-    public static function countChecks(Board $board, bool $color = true): int{
-        $count = 0;
-        $counted = [];
-
-        foreach($board->anyChecks() as $check){
-            [$checkingPiecePos,] = $check;
-            assert($checkingPiecePos instanceof Position);
-
-            $checkingPiece = $board->getPieceFromPosition($checkingPiecePos);
-            assert($checkingPiece instanceof Piece);
-
-            if(!in_array($check, $counted, true) && $checkingPiece->getColor()){
-                $counted[] = $check;
-                $count++;
-            }
-        }
-
-        return $count;
-    }
-
-    private static function getMovesCached(Board $board, bool $color): array {
-        $md5 = $board->md5Board();
-        $cacheName = 'moves_' . $md5 . '_' . ($color ? 'w' : 'b');
-
-        if (isset($GLOBALS['moveCache'][$cacheName])) {
-            return $GLOBALS['moveCache'][$cacheName];
-        }
-
-        $pieces = $board->getPieces($color, true);
-        $rules = new Rules();
-        $moves = [];
-
-        foreach($pieces as $piece){
-            assert($piece instanceof Position);
-            $moves[] = $rules->getAllMovesForPiece($board, $piece);
-        }
-
-        $GLOBALS['moveCache'][$cacheName] = $moves;
-
-        return $moves;
-    }
-
-    public static function countMoves(Board $board, bool $color = true): int{
-        $getMoves = self::getMovesCached($board, $color);
-
-        return count($getMoves);
-    }
-
-    public static function evaluate(Board $board, bool $color = true): float{
-        $md5 = $board->md5Board();
+    /**
+     * @throws Exception
+     */
+    public static function bestMove(Board $board, bool $color, int $depth = 1, int $timePerMove = 5): ?Notation {
         $cache = new Cache();
 
-        if($cache->isset($md5 . '-color-' . ($color ? 'w' : 'b'))){
-            print "Cache hit on: " . $md5 . '-color-' . ($color ? 'w' : 'b') . PHP_EOL;
-            return $cache->get($md5 . '-color-' . ($color ? 'w' : 'b'));
+        $cacheKey = 'bestMove_'.$board->md5Board().'_'.($color ? 'w' : 'b');
+
+        if ($cache->isset($cacheKey)) {
+            return Notation::generateFromString($cache->get($cacheKey));
         }
 
-        $material = self::countMaterial($board, $color);
-        $checks = self::countChecks($board, $color);
-        $moves = self::countMoves($board, $color);
+        $pieces = [];
 
-        $materialValue = $material * self::RULEWEIGHTS['piececount'];
-        $checkValue = $checks * self::RULEWEIGHTS['check'];
-        $moveValue = $moves * self::RULEWEIGHTS['movecount'];
+        $rules = new Rules();
 
-        if(isset($argv[1]) && $argv[1] === 'debug'){
-            print "Material: " . $material . " = " . $materialValue . PHP_EOL;
-            print "Checks: " . $checks . " = " . $checkValue . PHP_EOL;
-            print "Moves: " . $moves . " = " . $moveValue . PHP_EOL;
-        }
-
-        $return = $materialValue + $checkValue + $moveValue;
-
-        print "Cache set on: " . $md5 . '-color-' . ($color ? 'w' : 'b') . PHP_EOL;
-        $cache->set($md5 . '-color-' . ($color ? 'w' : 'b'), $return);
-        $cache->save();
-
-        return $return;
-    }
-
-    public static function evaluateWhiteVsBlack(Board $board, bool $forWhite = true): float{
-        $white = self::evaluate($board, true);
-        $black = self::evaluate($board, false);
-
-        return $forWhite ? $white - $black : $black - $white;
-    }
-
-    public static function allPossibleMoves(Board $board, bool $color = true, int $depth = 1, int $i = 0): array {
-        $moves = self::getMovesCached($board, $color);
-
-        $return = [];
-
-
-
-        foreach($moves as $piece){
-            if (is_array($piece)){
-                foreach($piece as $move){
-                    assert($move instanceof Notation);
-
-                    print "Calculating Notation: " . $move . PHP_EOL;
-
-                    $fakeBoard = $board->makeBoardOfChanges(false, $move);
-
-                    $moves = array_merge($moves, self::allPossibleMoves($fakeBoard, !$color, $depth, $i + 1));
+        foreach ($board->jsonSerialize() as $letter => $col) {
+            foreach ($col as $number => $piece) {
+                if ($piece === null) {
+                    continue;
+                }
+                if ($piece['color'] === $color) {
+                    $pieces[] = [$letter, $number];
                 }
             }
         }
 
+        $bestMove = -5000;
+        $bestMoveNotation = null;
 
-        return $return;
+        $start = microtime(true);
+
+        foreach ($pieces as $piece) {
+            [$letter, $number] = $piece;
+            $position = new Position($letter, $number);
+
+            $nowTime = microtime(true)-$start;
+
+            if ($nowTime > ($timePerMove/$depth)) {
+                break;
+            }
+
+            $allMoves = $rules->getAllMovesForPiece($board, $position);
+
+            foreach ($allMoves as $move) {
+                assert($move instanceof Notation);
+
+                $fakeBoard = $board->makeBoardOfChanges(false, $move);
+
+                $current = self::evaluateForColor($fakeBoard, $color);
+
+
+                // Add depth
+
+                if ($depth > 1) {
+                    $bestDepthMove = self::bestMove($fakeBoard, !$color, $depth - 1, $timePerMove);
+                    $current += self::evaluateForColor($fakeBoard->makeBoardOfChanges(false, $bestDepthMove), $color);
+                }
+
+                if ($current > $bestMove) {
+                    $bestMove = $current;
+                    $bestMoveNotation = $move;
+                }
+            }
+        }
+
+        $cache->set($cacheKey, (string) $bestMoveNotation);
+
+        return $bestMoveNotation ?? null;
     }
 
+    /**
+     * @param Board $board
+     * @param bool $color
+     * @return float
+     */
+    private static function evaluateForColor(Board $board, bool $color = true): float
+    {
+        return $color
+            ? self::evaluateBoard($board)
+            : -self::evaluateBoard($board);
+    }
+
+    /**
+     * @param Board $board
+     * @return float
+     */
+    public static function evaluateBoard(Board $board): float
+    {
+        $eval = 0;
+
+        $rules = new Rules();
+
+        $becausePieces = 0;
+        $becausePiecesBlack = 0;
+        $becauseMoves = 0;
+        $becauseMovesBlack = 0;
+        $becauseTakes = 0;
+        $becauseTakesBlack = 0;
+
+        foreach ($board->getPieces(true) as $piece) {
+            assert($piece instanceof Piece);
+            $eval += self::VALUE[$piece->getName()] ?? 0;
+            $becausePieces += self::VALUE[$piece->getName()] ?? 0;
+        }
+
+        foreach ($board->getPieces(false) as $piece) {
+            assert($piece instanceof Piece);
+            $eval -= self::VALUE[$piece->getName()] ?? 0;
+            $becausePiecesBlack += self::VALUE[$piece->getName()] ?? 0;
+        }
+
+        foreach ($board->jsonSerialize() as $letter => $cols) {
+            foreach ($cols as $number => $piece) {
+                if ($piece === null) {
+                    continue;
+                }
+                $pos = new Position($letter, $number);
+                $moves = $rules->getAllMovesForPiece($board, $pos);
+                $takes = $rules->getAllTakesForPiece($board, $pos);
+                $factor = match($piece['piece']) {
+                    'P' => 0.1,
+                    'N' => 0.32,
+                    'B' => 0.33,
+                    'R' => 0.5,
+                    'Q' => 0.9,
+                    default => 0,
+                };
+                $change = count($moves) * $factor * 2;
+                $change += count($takes) * $factor;
+                if ($piece['color']) {
+                    $eval += $change;
+                    $becauseMoves += count($moves) * $factor * 2;
+                    $becauseTakes += count($takes) * $factor;
+                } else {
+                    $eval -= $change;
+                    $becauseMovesBlack += count($moves) * $factor * 2;
+                    $becauseTakesBlack += count($takes) * $factor;
+                }
+            }
+        }
+
+        /*
+        print "Changes due to:<br>";
+        print "Pieces: White <b>".$becausePieces."</b> Black <b>".$becausePiecesBlack."</b><br>";
+        print "Moves: White <b>".$becauseMoves."</b> Black <b>".$becauseMovesBlack."</b><br>";
+        print "Takes: White <b>".$becauseTakes."</b> Black <b>".$becauseTakesBlack."</b><br>";
+        */
+
+        return $eval;
+    }
 }

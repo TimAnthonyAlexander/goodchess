@@ -6,8 +6,8 @@ use JsonException;
 
 class Cache{
     public function __construct() {
-        if (!isset($GLOBALS['cache'])) {
-            $GLOBALS['cache'] = [];
+        if (!isset($GLOBALS['cacheDataStorage']) || !is_array($GLOBALS['cacheDataStorage'])) {
+            $GLOBALS['cacheDataStorage'] = [];
         }
     }
 
@@ -15,38 +15,43 @@ class Cache{
      * @throws JsonException
      */
     public function load(): void {
-        if (!file_exists('cache.json')) {
+        if (!file_exists(__DIR__.'/cache.json')) {
             $this->save();
         }
-        $GLOBALS['cache'] = json_decode(file_get_contents("cache.json"), true, 512, JSON_THROW_ON_ERROR);
+        $GLOBALS['cacheDataStorage'] = json_decode(file_get_contents(__DIR__."/cache.json"), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    public function delete(): void {
+        $GLOBALS['cacheDataStorage'] = [];
+        $this->save();
     }
 
     /**
      * @throws JsonException
      */
     public function save(): void {
-        file_put_contents("cache.json", json_encode($GLOBALS['cache'], JSON_THROW_ON_ERROR));
+        file_put_contents(__DIR__."/cache.json", json_encode($GLOBALS['cacheDataStorage'], JSON_THROW_ON_ERROR));
     }
 
     public function add($key, $value): void {
-        if (!isset($GLOBALS['cache'][$key])) {
-            $GLOBALS['cache'][$key] = $value;
+        if (!isset($GLOBALS['cacheDataStorage'][$key])) {
+            $GLOBALS['cacheDataStorage'][$key] = $value;
         }
     }
 
     public function set($key, $value): void {
-        $GLOBALS['cache'][$key] = $value;
+        $GLOBALS['cacheDataStorage'][$key] = $value;
     }
 
     public function remove($key): void {
-        unset($GLOBALS['cache'][$key]);
+        unset($GLOBALS['cacheDataStorage'][$key]);
     }
 
     public function isset($key): bool {
-        return isset($GLOBALS['cache'][$key]);
+        return isset($GLOBALS['cacheDataStorage'][$key]);
     }
 
     public function get($key) {
-        return $GLOBALS['cache'][$key];
+        return $GLOBALS['cacheDataStorage'][$key];
     }
 }

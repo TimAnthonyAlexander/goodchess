@@ -3,11 +3,6 @@ namespace RealChess;
 
 $level = 2; // Default: Board::EVAL_LEVEL
 
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 // check if board is initalized
 if (!isset($_SESSION['board'])) {
     $_SESSION['board'] = new Board();
@@ -24,16 +19,25 @@ if ($_POST['reset'] ?? '' === 'reset') {
     $board->initializeDefaultBoard();
 }
 
+$timePerMove = 40;
+
 if ($_POST['move'] ?? false) {
     $rules = new Rules();
     $notation = Notation::generateFromString($_POST['move']);
     if ($rules->isValidFor($notation, $board)){
         $board->movePiece($notation);
+
+        if ($_SESSION['engine']) {
+            $bestMove = TimFish::bestMove($board, false, 2, $timePerMove);
+            ini_set('max_execution_time', $timePerMove+10);
+            $board->movePiece($bestMove);
+        }
         $_SESSION['board'] = $board;
     }
 }
 
-#$eval = TimFish::evaluateWhiteVsBlack($board);
+$eval = round(TimFish::evaluateBoard($board), 2);
+
 
 
 $getBoard = $board->jsonSerialize();
@@ -45,6 +49,19 @@ if ((string) $lastMove !== (string) new Notation(Position::generateFromString('E
 } else {
     print "<h3>Current turn: White</h3><br>";
 }
+
+print "<h3>Board evaluation: " . $eval . "</h3><br>";
+
+/*
+$bestMove = Engine::minimax($board, 1, $lastColor);
+var_dump($bestMove);
+
+print ' is the best move for '.($lastColor ? 'White' : 'Black').'<br>';
+if ($_SESSION['engine']){
+    $bestMove = Engine::bestMove($board, $lastColor);
+    print "Best move: <b>" . $bestMove . '</b><br>';
+}
+*/
 
 $checks = $board->anyChecks();
 if (count($checks) > 0) {
@@ -70,7 +87,6 @@ foreach ($getBoard as $key => $column) {
         }
     }
 }
-
 
 
 function getImage(string $piece) {
@@ -143,10 +159,9 @@ echo '<input type="text" id="move" name="move" hidden autofocus>';
 echo '<input type="submit" value="Send" hidden>';
 echo '</form>';
 
-#TimFish::allPossibleMoves($board, false);
-
 // Form to reset
 echo '<form action="" method="post">';
 echo '<input type="hidden" name="reset" value="reset">';
 echo '<input type="submit" value="Reset">';
 echo '</form>';
+

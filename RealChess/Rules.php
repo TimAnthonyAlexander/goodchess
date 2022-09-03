@@ -3,6 +3,7 @@ namespace RealChess;
 
 
 use Exception;
+use InvalidArgumentException;
 
 class Rules{
     /*
@@ -35,7 +36,7 @@ class Rules{
             return false;
         }
 
-        if ($piece->getColor() === $board->getLastColor()) {
+        if (!$isFake && $piece->getColor() === $board->getLastColor()) {
             return false;
         }
 
@@ -653,7 +654,7 @@ class Rules{
                 continue;
             }
 
-            if ($this->isValidFor($move, $board)) {
+            if ($this->isValidFor($move, $board, isFake: true)) {
                 $result[] = $move;
             }
         }
@@ -755,23 +756,29 @@ class Rules{
 
     public function getAllMovesForPiece(Board $board, Position $position): array
     {
-        $piece = $board->getPieceFromPosition($position);
-
-        if ($piece === null) {
-            throw new \InvalidArgumentException('No piece at position ' . $position->getLetter() . $position->getNumber());
-        }
-
-        $movesFor = match ($piece->getName()) {
-            'K' => $this->getAllMovesForKing($board, $position),
-            'Q' => $this->getAllMovesForQueen($board, $position),
-            'B' => $this->getAllMovesForBishop($board, $position),
-            'R' => $this->getAllMovesForRook($board, $position),
-            'N' => $this->getAllMovesForKnight($board, $position),
-            'P' => $this->getAllMovesForPawn($board, $position),
-            default => throw new \InvalidArgumentException('Unknown piece ' . $piece->getName()),
-        };
+        $movesFor = $this->getMovesFor($board, $position);
 
         return $this->filterMoves($board, ...$movesFor);
+    }
+
+    public function getAllTakesForPiece(Board $board, Position $position): array
+    {
+        $movesFor = $this->getMovesFor($board, $position);
+
+        return $this->filterTakes($board, ...$this->filterMoves($board, ...$movesFor));
+    }
+
+    private function filterTakes(Board $board, Notation ...$moves): array
+    {
+        $filtered = [];
+
+        foreach ($moves as $move) {
+            if ($board->getPieceFromPosition($move->getTo()) !== null) {
+                $filtered[] = $move;
+            }
+        }
+
+        return $filtered;
     }
 
     /**
@@ -788,5 +795,28 @@ class Rules{
 
 
         return true;
+    }
+
+    /**
+     * @param Board $board
+     * @param Position $position
+     * @return array
+     */
+    private function getMovesFor(Board $board, Position $position): array{
+        $piece = $board->getPieceFromPosition($position);
+
+        if($piece === null){
+            throw new InvalidArgumentException('No piece at position ' . $position->getLetter() . $position->getNumber());
+        }
+
+        return match ($piece->getName()) {
+            'K' => $this->getAllMovesForKing($board, $position),
+            'Q' => $this->getAllMovesForQueen($board, $position),
+            'B' => $this->getAllMovesForBishop($board, $position),
+            'R' => $this->getAllMovesForRook($board, $position),
+            'N' => $this->getAllMovesForKnight($board, $position),
+            'P' => $this->getAllMovesForPawn($board, $position),
+            default => throw new InvalidArgumentException('Unknown piece ' . $piece->getName()),
+        };
     }
 }

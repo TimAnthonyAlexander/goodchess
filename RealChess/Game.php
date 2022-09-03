@@ -99,7 +99,7 @@ class Game {
                     print "CHECKED!".PHP_EOL;
                 }
                 $before = microtime(true);
-                $eval = round(TimFish::evaluateWhiteVsBlack($board), 3);
+                $eval = round(TimFish::evaluateBoard($board), 3);
                 $after = round(microtime(true) - $before, 2);
                 print "Evaluation: " . $eval . " (" . $after . "s)".PHP_EOL;
             }

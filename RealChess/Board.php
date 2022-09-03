@@ -105,6 +105,7 @@ class Board {
             }
         }
         $this->lastColor = false;
+        $this->lastMove = new Notation(Position::generateFromString('E2'), Position::generateFromString('E2'));
 
         // White
         $this->board['a'][1] = new Piece(['piece' => 'R', 'color' => true, 'uuid' => Uuid::uuid4()->toString()]);
