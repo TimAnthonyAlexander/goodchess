@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase;
 use RealChess\Board;
 use RealChess\Notation;
 use RealChess\Piece;
+use RealChess\Position;
 
 class CheckTest extends TestCase{
 
@@ -26,6 +27,6 @@ class CheckTest extends TestCase{
 
         $this->board->movePiece(Notation::generateFromString('D1H5'));
 
-        self::assertNotEmpty($this->board->anyChecks());
+        self::assertCount(2, $this->board->anyChecks());
     }
 }

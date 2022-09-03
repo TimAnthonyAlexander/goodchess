@@ -2,8 +2,6 @@
 namespace RealChess;
 
 
-use Generator;
-
 class Rules{
     /*
      * All these rules in the constants have a function in the Rules class

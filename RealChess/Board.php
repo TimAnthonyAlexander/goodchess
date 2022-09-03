@@ -2,6 +2,7 @@
 namespace RealChess;
 
 
+use Exception;
 use Ramsey\Uuid\Uuid;
 
 class Board {
@@ -180,13 +181,13 @@ class Board {
     /**
      * @param Notation $notation
      * @return void
-     * @throws \Exception
+     * @throws Exception
      */
     public function movePiece(Notation $notation): void {
         $piece = $this->getPieceFromPosition($notation->getFrom());
 
         if ($piece === null) {
-            throw new \Exception("No piece found at ".$notation->getFrom()->getLetter().$notation->getFrom()->getNumber());
+            throw new Exception("No piece found at ".$notation->getFrom()->getLetter().$notation->getFrom()->getNumber());
         }
 
         $this->clearPiece($notation->getFrom());
@@ -294,7 +295,7 @@ class Board {
      * @param bool $checkChanges
      * @param Notation ...$change
      * @return Board
-     * @throws \Exception
+     * @throws Exception
      */
     public function makeBoardOfChanges(bool $checkChanges = false, Notation ...$change): Board {
         $board = clone $this;
@@ -480,6 +481,7 @@ class Board {
     /**
      * @param Position $king
      * @return array
+     * @throws Exception
      */
     public function calculateChecksForKing(Position $king): array {
         $kingPiece = $this->getPieceFromPosition($king);
