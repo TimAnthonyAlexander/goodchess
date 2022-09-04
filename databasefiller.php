@@ -4,6 +4,8 @@ namespace RealChess;
 
 require("vendor/autoload.php");
 
+ini_set('memory_limit', '1G');
+
 
 $board = new Board();
 $cache = new Cache();
@@ -16,7 +18,9 @@ for ($i = 0; $i < 100; $i++) {
     for ($j = 0; $j < 50; $j++) {
         $randomBool = random_int(0, 3) !== 1;
         if ($randomBool){
-            $bestMove = TimFish::bestMove($board, $color, 3, 100, true);
+            $_SESSION['moveCount'] = 0;
+            $bestMove = TimFish::bestMove($board, $color, 2, 100, true);
+            print "Calcualted ".$_SESSION['moveCount']." moves".PHP_EOL;
             print "Playing best move.".PHP_EOL;
         } else {
             $boardArray = $board->jsonSerialize();
@@ -43,7 +47,7 @@ for ($i = 0; $i < 100; $i++) {
 
             print "Playing random move.".PHP_EOL;
         }
-        print "Moving [".($j+1)."]: " . $bestMove . PHP_EOL;
+        print "Moving [".($i+1)."][".($j+1)."]: " . $bestMove . PHP_EOL;
         $board->movePiece($bestMove);
         $board->viewTerminal();
         $color = !$color;

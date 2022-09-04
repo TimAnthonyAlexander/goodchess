@@ -19,7 +19,7 @@ if ($_POST['reset'] ?? '' === 'reset') {
     $board->initializeDefaultBoard();
 }
 
-$timePerMove = 40;
+$timePerMove = 120;
 
 if ($_POST['move'] ?? false) {
     $rules = new Rules();
@@ -28,6 +28,7 @@ if ($_POST['move'] ?? false) {
         $board->movePiece($notation);
 
         if ($_SESSION['engine']) {
+            $_SESSION['moveCount'] = 0;
             $bestMove = TimFish::bestMove($board, false, 2, $timePerMove);
             ini_set('max_execution_time', $timePerMove+10);
             $board->movePiece($bestMove);
@@ -36,21 +37,25 @@ if ($_POST['move'] ?? false) {
     }
 }
 
-$eval = round(TimFish::evaluateBoard($board), 2);
+
+$eval = round(TimFish::evaluateBoard($board, $_SESSION['verbose']), 2);
 
 
+$memoryUsage = memory_get_peak_usage(true) / 1024 / 1024;
 
 $getBoard = $board->jsonSerialize();
 $lastMove = $board->getLastMove();
 $lastColor = !$board->getLastColor();
 if ((string) $lastMove !== (string) new Notation(Position::generateFromString('E2'), Position::generateFromString('E2'))){
-    print ("<h3>Last move: " . $lastMove . "</h3><br>");
-    print "<h3>Current turn: " . ($lastColor ? "White" : "Black") . "</h3><br>";
+    print ("<h3>Last move: " . $lastMove . "</h3>");
+    print "<h3>Current turn: " . ($lastColor ? "White" : "Black") . "</h3>";
 } else {
     print "<h3>Current turn: White</h3><br>";
 }
 
-print "<h3>Board evaluation: " . $eval . "</h3><br>";
+print "<h3>Board evaluation: " . $eval . "</h3>";
+print "<h3>Calculated moves: " . $_SESSION['moveCount'] . "</h3>";
+print "<h4>Memory usage: " . $memoryUsage . "MB</h4>";
 
 /*
 $bestMove = Engine::minimax($board, 1, $lastColor);

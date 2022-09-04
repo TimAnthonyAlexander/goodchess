@@ -286,6 +286,15 @@ class Rules{
             return false;
         }
 
+        // If white check if $to->getNumber() is higher than $from->getNumber()
+        if($attackingColor){
+            if($to->getNumber() < $from->getNumber()){
+                return false;
+            }
+        } else if($to->getNumber() > $from->getNumber()){
+            return false;
+        }
+
         return true;
     }
 
@@ -510,13 +519,7 @@ class Rules{
             return false;
         }
 
-        // Check distance traveled for $letter to be 1
-        if (Board::calculateLetter($from->getLetter(), 1) !== $to->getLetter() && Board::calculateLetter($from->getLetter(), -1) !== $to->getLetter()) {
-            return false;
-        }
-
-        // Check distance traveled for $number to be 1
-        if (abs($from->getNumber() - $to->getNumber()) !== 1) {
+        if (abs(ord($from->getLetter()) - ord($to->getLetter())) !== 1 && abs($from->getNumber() - $to->getNumber()) !== 0 && abs(ord($from->getLetter()) - ord($to->getLetter())) !== 0 && abs($from->getNumber() - $to->getNumber()) !== 1){
             return false;
         }
 
