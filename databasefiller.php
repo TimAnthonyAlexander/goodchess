@@ -16,7 +16,7 @@ for ($i = 0; $i < 100; $i++) {
     for ($j = 0; $j < 50; $j++) {
         $randomBool = random_int(0, 3) !== 1;
         if ($randomBool){
-            $bestMove = TimFish::bestMove($board, $color, 2, 4);
+            $bestMove = TimFish::bestMove($board, $color, 3, 100, true);
             print "Playing best move.".PHP_EOL;
         } else {
             $boardArray = $board->jsonSerialize();

@@ -18,7 +18,7 @@ class TimFish {
     /**
      * @throws Exception
      */
-    public static function bestMove(Board $board, bool $color, int $depth = 1, int $timePerMove = 5): ?Notation {
+    public static function bestMove(Board $board, bool $color, int $depth = 1, int $timePerMove = 5, bool $verbose = false): ?Notation {
         $cache = new Cache();
 
         $cacheKey = 'bestMove_'.$board->md5Board().'_'.($color ? 'w' : 'b');
@@ -70,13 +70,16 @@ class TimFish {
                 // Add depth
 
                 if ($depth > 1) {
-                    $bestDepthMove = self::bestMove($fakeBoard, !$color, $depth - 1, $timePerMove);
+                    $bestDepthMove = self::bestMove($fakeBoard, !$color, $depth - 1, $timePerMove, $verbose);
                     $current += self::evaluateForColor($fakeBoard->makeBoardOfChanges(false, $bestDepthMove), $color);
                 }
 
                 if ($current > $bestMove) {
                     $bestMove = $current;
                     $bestMoveNotation = $move;
+                    if ($verbose) {
+                        print ($color ? "[WHITE]" : "[BLACK] ")."[$depth] New best move: " . $bestMoveNotation . " with value " . $bestMove . PHP_EOL;
+                    }
                 }
             }
         }
