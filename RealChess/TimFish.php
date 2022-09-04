@@ -8,23 +8,22 @@ use JsonException;
 class TimFish {
 
     private const VALUE = [
-        'P' => 1,
-        'N' => 3.2,
-        'B' => 3.3,
-        'R' => 5,
-        'Q' => 9,
-        'K' => 200,
+        'P' => 2,
+        'N' => 6.2,
+        'B' => 6.3,
+        'R' => 10,
+        'Q' => 18,
+        'K' => 400,
     ];
 
     /**
      * @param Board $board
      * @param bool $verbose
+     * @param bool $doTakes
      * @return float
-     * @throws JsonException
-     *
-     * This method evaluates the board in favor of white in a float value.
+     * @throws JsonException This method evaluates the board in favor of white in a float value.
      */
-    public static function evaluateBoard(Board $board, bool $verbose = false): float
+    public static function evaluateBoard(Board $board, bool $verbose = false, bool $doTakes = false): float
     {
 
         $cache = new Cache();
@@ -57,9 +56,7 @@ class TimFish {
 
         $pawnsNotDeveloped = count(self::getPawnsNotDeveloped($board, true));
         $pawnsNotDevelopedBlack = count(self::getPawnsNotDeveloped($board, false));
-        $pawnsNotDevelopedPenaltyFactor = 0.5;
-
-        $doTakes = false;
+        $pawnsNotDevelopedPenaltyFactor = 0.05;
 
         if ($doTakes){
             $takes = (new Rules())->getAllTakeMoves($board, true);
@@ -104,7 +101,10 @@ class TimFish {
      *
      * This method returns the best move according to the TimFish algorithm.
      */
-    public static function bestMove(Board $board, bool $color, int $depth = 1, int $timePerMove = 5, bool $verbose = false): ?Notation {
+    public static function bestMove(Board $board, bool $color, int $depth = 1, int $timePerMove = 5, bool $verbose = false, bool $doTakes = false): ?Notation {
+
+        ini_set('max_execution_time', $timePerMove+12);
+
         $cache = new Cache();
 
         $cacheKey = 'bestMove_'.$board->md5Board().'_'.($color ? 'w' : 'b');
@@ -178,14 +178,15 @@ class TimFish {
      * @param Board $board
      * @param bool $color
      * @param bool $verbose
+     * @param bool $doTakes
      * @return float
      * @throws JsonException
      */
-    private static function evaluateForColor(Board $board, bool $color = true, bool $verbose = false): float
+    private static function evaluateForColor(Board $board, bool $color = true, bool $verbose = false, bool $doTakes = false): float
     {
         return $color
-            ? self::evaluateBoard($board, $verbose)
-            : -self::evaluateBoard($board, $verbose);
+            ? self::evaluateBoard($board, $verbose, $doTakes)
+            : -self::evaluateBoard($board, $verbose, $doTakes);
     }
 
     /**

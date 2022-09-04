@@ -18,13 +18,12 @@ for ($i = 0; $i < 100; $i++) {
     $board->initializeDefaultBoard();
     $color = true;
     for ($j = 0; $j < 50; $j++) {
-        $playRandomMove = random_int(0, 3) === 1;
+        $playRandomMove = random_int(0, 1) === 1;
         if ($playRandomMove){
-            playRandomMove($board, $color);
-
+            $bestMove = playRandomMove($board, $color);
         }else{
             $_SESSION['moveCount'] = 0;
-            $bestMove = TimFish::bestMove($board, $color, 2, 100, true);
+            $bestMove = TimFish::bestMove($board, $color, 3, 100, true, true);
             print "Calculated [" . $_SESSION['moveCount'] . "] moves - Playing best one." . PHP_EOL;
         }
         print "Moving [".($i+1)."][".($j+1)."]: " . $bestMove . PHP_EOL;

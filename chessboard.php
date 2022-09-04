@@ -19,7 +19,7 @@ if ($_POST['reset'] ?? '' === 'reset') {
     $board->initializeDefaultBoard();
 }
 
-$timePerMove = 120;
+$timePerMove = $_SESSION['timepermove'] ?? 60;
 $depth = 3;
 
 if ($_POST['move'] ?? false) {
@@ -31,7 +31,7 @@ if ($_POST['move'] ?? false) {
         if ($_SESSION['engine']) {
             $_SESSION['moveCount'] = 0;
             $beforeTime = microtime(true);
-            $bestMove = TimFish::bestMove($board, false, $depth, $timePerMove);
+            $bestMove = TimFish::bestMove($board, false, $depth, $timePerMove, true, true);
             $afterTime = microtime(true)-$beforeTime;
             ini_set('max_execution_time', $timePerMove+10);
             $board->movePiece($bestMove);
@@ -40,7 +40,7 @@ if ($_POST['move'] ?? false) {
     }
 }
 
-$eval = round(TimFish::evaluateBoard($board, $_SESSION['verbose']), 2);
+$eval = round(TimFish::evaluateBoard($board, true), 2);
 
 
 $memoryUsage = memory_get_peak_usage(true) / 1024 / 1024;
@@ -56,8 +56,8 @@ if ((string) $lastMove !== (string) new Notation(Position::generateFromString('E
 }
 
 print "<h3>Board evaluation: " . $eval . "</h3>";
-print "<h3>Calculated moves: " . $_SESSION['moveCount'] . "</h3>";
-print "<h4>Time for engine move: " . round($afterTime, 2) . "s</h4>";
+print "<h3>Calculated moves: " . ($_SESSION['moveCount'] ?? 0) . "</h3>";
+print "<h4>Time for engine move: " . round($afterTime ?? 0, 2) . "s</h4>";
 print "<h4>Engine depth: " . $depth . "</h4>";
 print "<h5>Memory usage: " . $memoryUsage . "MB</h5>";
 

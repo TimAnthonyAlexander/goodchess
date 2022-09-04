@@ -6,11 +6,6 @@ class Game {
     public static function start(bool $interactive = false): void{
         ini_set('max_execution_time', '4');
 
-        // If session is not set, start session
-        if(!isset($_SESSION)){
-            session_start();
-        }
-
         $cache = new Cache();
         $cache->load();
 

@@ -3,7 +3,7 @@ namespace RealChess;
 
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
-ini_set('max_execution_time', 90);
+ini_set('max_execution_time', 180);
 ini_set('memory_limit', '512M');
 
 
@@ -18,12 +18,13 @@ $cache = new Cache();
 $cache->load();
 
 $engine = false;
-$verbose = true;
 
 if (isset($_POST['sentdata'])) {
     $engine = $_SESSION['engine'] = $_POST['engine'] ?? false;
+    $timepermove = $_SESSION['timepermove'] = $_POST['timepermove'] ?? 60;
 } else {
     $engine = $_SESSION['engine'] ?? false;
+    $timepermove = $_SESSION['timepermove'] ?? 60;
 }
 
 
@@ -43,6 +44,10 @@ if ($resetcache) {
         <label for="resetcache">
             <input type="checkbox" value="1" name="resetcache" id="resetcache" onchange="this.form.submit()"> Reset Cache
         </label><br>
+        <label for="timepermove">
+            Time per move: <input type="number" value="<?=$timepermove?>" name="timepermove" id="timepermove" onchange="this.form.submit()"> seconds<br>
+        </label>
+        <input type="submit" value="Save">
     </form>
 </div>
 
