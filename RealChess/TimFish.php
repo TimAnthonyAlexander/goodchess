@@ -51,7 +51,7 @@ class TimFish {
 
         $lastRowStuff = self::getLastRowPieces($board, true);
         $lastRowStuffBlack = self::getLastRowPieces($board, false);
-        $lastRowPenaltyFactor = 2;
+        $lastRowPenaltyFactor = 0.047;
         $lastRowPenalty = count($lastRowStuff) * $lastRowPenaltyFactor;
         $lastRowPenaltyBlack = count($lastRowStuffBlack) * $lastRowPenaltyFactor;
 
@@ -59,24 +59,33 @@ class TimFish {
         $pawnsNotDevelopedBlack = count(self::getPawnsNotDeveloped($board, false));
         $pawnsNotDevelopedPenaltyFactor = 0.5;
 
-        $takes = (new Rules())->getAllTakeMoves($board, true);
-        $takesBlack = (new Rules())->getAllTakeMoves($board, false);
-        $takesFactor = 0.1;
-        $takesEval = count($takes) * $takesFactor;
-        $takesEvalBlack = count($takesBlack) * $takesFactor;
+        $doTakes = false;
+
+        if ($doTakes){
+            $takes = (new Rules())->getAllTakeMoves($board, true);
+            $takesBlack = (new Rules())->getAllTakeMoves($board, false);
+            $takesFactor = 0.1;
+            $takesEval = count($takes) * $takesFactor;
+            $takesEvalBlack = count($takesBlack) * $takesFactor;
+        }
 
 
         $eval -= $lastRowPenalty - $lastRowPenaltyBlack;
         $eval -= $pawnsNotDeveloped * $pawnsNotDevelopedPenaltyFactor - $pawnsNotDevelopedBlack * $pawnsNotDevelopedPenaltyFactor;
-        $eval += $takesEval - $takesEvalBlack;
+
+        if ($doTakes){
+            $eval += $takesEval - $takesEvalBlack;
+        }
 
         $newline = PHP_SAPI === 'cli' ? PHP_EOL : '<br>';
 
-        if ($verbose){
+        if ($verbose === true) {
             print "Pieces: White " . $becausePieces . " - Black " . $becausePiecesBlack . " - " . round(($becausePieces-$becausePiecesBlack), 2) .$newline;
             print "Last row penalty: White " . $lastRowPenalty . " - Black " . $lastRowPenaltyBlack . " - " . round(($lastRowPenalty-$lastRowPenaltyBlack), 2) .$newline;
             print "Pawns not developed: White " . $pawnsNotDeveloped . " - Black " . $pawnsNotDevelopedBlack . " - " . round(($pawnsNotDeveloped-$pawnsNotDevelopedBlack), 2) .$newline;
-            print "Takes: White " . $takesEval . " - Black " . $takesEvalBlack . " - " . round(($takesEval-$takesEvalBlack), 2) .$newline;
+            if ($doTakes){
+                print "Takes: White " . $takesEval . " - Black " . $takesEvalBlack . " - " . round(($takesEval-$takesEvalBlack), 2) .$newline;
+            }
         }
 
         $cache->set('evaluateBoard_'.$board->md5Board(), $eval);

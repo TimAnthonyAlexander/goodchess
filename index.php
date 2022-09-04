@@ -18,15 +18,14 @@ $cache = new Cache();
 $cache->load();
 
 $engine = false;
-$verbose = false;
+$verbose = true;
 
 if (isset($_POST['sentdata'])) {
     $engine = $_SESSION['engine'] = $_POST['engine'] ?? false;
-    $verbose = $_SESSION['verbose'] = $_POST['verbose'] ?? false;
 } else {
     $engine = $_SESSION['engine'] ?? false;
-    $verbose = $_SESSION['verbose'] ?? false;
 }
+
 
 $resetcache = $_POST['engine'] ?? false;
 
@@ -44,9 +43,6 @@ if ($resetcache) {
         <label for="resetcache">
             <input type="checkbox" value="1" name="resetcache" id="resetcache" onchange="this.form.submit()"> Reset Cache
         </label><br>
-        <label for="verbose">
-            <input type="checkbox" value="1" <?= $verbose ? 'checked' : '' ?> name="verbose" id="verbose" onchange="this.form.submit()"> Verbose
-        </label>
     </form>
 </div>
 

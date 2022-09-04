@@ -778,7 +778,7 @@ class Rules{
             }
         }
 
-        return $this->filterMoves($board, ...$filtered);
+        return $filtered;
     }
 
     /**
