@@ -264,11 +264,16 @@ class Board {
      * @param bool $asPosition
      * @return array<int, Piece>
      */
-    public function getPieces(bool $color, bool $asPosition = false): array {
+    public function getPieces(?bool $color = null, bool $asPosition = false): array {
         $pieces = [];
         foreach ($this->board as $letter => $row) {
             foreach ($row as $number => $piece) {
-                if ($piece !== null && $piece['color'] === $color) {
+                if ($piece === null) {
+                    continue;
+                }
+                if ($color === null) {
+                    $pieces[] = $asPosition ? new Position($letter, $number) : new Piece($piece);
+                } else if ($piece['color'] === $color) {
                     $pieces[] = $asPosition ? new Position($letter, $number) : new Piece($piece);
                 }
             }

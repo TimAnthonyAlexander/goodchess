@@ -17,7 +17,83 @@ class TimFish {
     ];
 
     /**
-     * @throws Exception
+     * @param Board $board
+     * @param bool $verbose
+     * @return float
+     * @throws JsonException
+     *
+     * This method evaluates the board in favor of white in a float value.
+     */
+    public static function evaluateBoard(Board $board, bool $verbose = false): float
+    {
+
+        $cache = new Cache();
+        if ($cache->isset('evaluateBoard_'.$board->md5Board())) {
+            return $cache->get('evaluateBoard_'.$board->md5Board());
+        }
+
+        $eval = 0;
+
+        $becausePieces = 0;
+        $becausePiecesBlack = 0;
+
+        foreach ($board->getPieces(true) as $piece) {
+            assert($piece instanceof Piece);
+            $eval += self::VALUE[$piece->getName()] ?? 0;
+            $becausePieces += self::VALUE[$piece->getName()] ?? 0;
+        }
+
+        foreach ($board->getPieces(false) as $piece) {
+            assert($piece instanceof Piece);
+            $eval -= self::VALUE[$piece->getName()] ?? 0;
+            $becausePiecesBlack += self::VALUE[$piece->getName()] ?? 0;
+        }
+
+        $lastRowStuff = self::getLastRowPieces($board, true);
+        $lastRowStuffBlack = self::getLastRowPieces($board, false);
+        $lastRowPenaltyFactor = 2;
+        $lastRowPenalty = count($lastRowStuff) * $lastRowPenaltyFactor;
+        $lastRowPenaltyBlack = count($lastRowStuffBlack) * $lastRowPenaltyFactor;
+
+        $pawnsNotDeveloped = count(self::getPawnsNotDeveloped($board, true));
+        $pawnsNotDevelopedBlack = count(self::getPawnsNotDeveloped($board, false));
+        $pawnsNotDevelopedPenaltyFactor = 0.5;
+
+        $takes = (new Rules())->getAllTakeMoves($board, true);
+        $takesBlack = (new Rules())->getAllTakeMoves($board, false);
+        $takesFactor = 0.1;
+        $takesEval = count($takes) * $takesFactor;
+        $takesEvalBlack = count($takesBlack) * $takesFactor;
+
+
+        $eval -= $lastRowPenalty - $lastRowPenaltyBlack;
+        $eval -= $pawnsNotDeveloped * $pawnsNotDevelopedPenaltyFactor - $pawnsNotDevelopedBlack * $pawnsNotDevelopedPenaltyFactor;
+        $eval += $takesEval - $takesEvalBlack;
+
+        $newline = PHP_SAPI === 'cli' ? PHP_EOL : '<br>';
+
+        if ($verbose){
+            print "Pieces: White " . $becausePieces . " - Black " . $becausePiecesBlack . " - " . round(($becausePieces-$becausePiecesBlack), 2) .$newline;
+            print "Last row penalty: White " . $lastRowPenalty . " - Black " . $lastRowPenaltyBlack . " - " . round(($lastRowPenalty-$lastRowPenaltyBlack), 2) .$newline;
+            print "Pawns not developed: White " . $pawnsNotDeveloped . " - Black " . $pawnsNotDevelopedBlack . " - " . round(($pawnsNotDeveloped-$pawnsNotDevelopedBlack), 2) .$newline;
+            print "Takes: White " . $takesEval . " - Black " . $takesEvalBlack . " - " . round(($takesEval-$takesEvalBlack), 2) .$newline;
+        }
+
+        $cache->set('evaluateBoard_'.$board->md5Board(), $eval);
+
+        return $eval;
+    }
+
+    /**
+     * @param Board $board
+     * @param bool $color
+     * @param int $depth
+     * @param int $timePerMove
+     * @param bool $verbose
+     * @return Notation|null
+     * @throws JsonException
+     *
+     * This method returns the best move according to the TimFish algorithm.
      */
     public static function bestMove(Board $board, bool $color, int $depth = 1, int $timePerMove = 5, bool $verbose = false): ?Notation {
         $cache = new Cache();
@@ -56,7 +132,7 @@ class TimFish {
 
             $nowTime = microtime(true)-$start;
 
-            if ($nowTime > ($timePerMove/$depth)) {
+            if ($nowTime > ($timePerMove/($depth+1))) {
                 break;
             }
 
@@ -67,11 +143,11 @@ class TimFish {
 
                 $fakeBoard = $board->makeBoardOfChanges(false, $move);
 
-                $current = self::evaluateForColor($fakeBoard, $color, $verbose);
+                $current = self::evaluateForColor($fakeBoard, $color);
 
                 // Add depth
 
-                if ($depth > 1) {
+                if ($depth > 0) {
                     $otherColor = !$color;
                     $bestDepthMove = self::bestMove($fakeBoard, $otherColor, $depth - 1, $timePerMove);
                     $current += self::evaluateForColor($fakeBoard->makeBoardOfChanges(false, $bestDepthMove), $color);
@@ -105,55 +181,9 @@ class TimFish {
 
     /**
      * @param Board $board
-     * @param bool $verbose
-     * @return float
-     * @throws JsonException
+     * @param bool $color
+     * @return array
      */
-    public static function evaluateBoard(Board $board, bool $verbose = false): float
-    {
-
-        $cache = new Cache();
-        if ($cache->isset('evaluateBoard_'.$board->md5Board())) {
-            return $cache->get('evaluateBoard_'.$board->md5Board());
-        }
-
-        $eval = 0;
-
-        $becausePieces = 0;
-        $becausePiecesBlack = 0;
-
-        foreach ($board->getPieces(true) as $piece) {
-            assert($piece instanceof Piece);
-            $eval += self::VALUE[$piece->getName()] ?? 0;
-            $becausePieces += self::VALUE[$piece->getName()] ?? 0;
-        }
-
-        foreach ($board->getPieces(false) as $piece) {
-            assert($piece instanceof Piece);
-            $eval -= self::VALUE[$piece->getName()] ?? 0;
-            $becausePiecesBlack += self::VALUE[$piece->getName()] ?? 0;
-        }
-
-        $lastRowStuff = self::getLastRowPieces($board, true);
-        $lastRowStuffBlack = self::getLastRowPieces($board, false);
-        $lastRowPenaltyFactor = 2;
-        $lastRowPenalty = count($lastRowStuff) * $lastRowPenaltyFactor;
-        $lastRowPenaltyBlack = count($lastRowStuffBlack) * $lastRowPenaltyFactor;
-        $eval -= $lastRowPenalty - $lastRowPenaltyBlack;
-
-
-        $newline = PHP_SAPI === 'cli' ? PHP_EOL : '<br>';
-
-        if ($verbose){
-            print "Pieces: White " . $becausePieces . " - Black " . $becausePiecesBlack . " - " . round(($becausePieces-$becausePiecesBlack), 2) .$newline;
-            print "Last row penalty: White " . $lastRowPenalty . " - Black " . $lastRowPenaltyBlack . " - " . round(($lastRowPenalty-$lastRowPenaltyBlack), 2) .$newline;
-        }
-
-        $cache->set('evaluateBoard_'.$board->md5Board(), $eval);
-
-        return $eval;
-    }
-
     public static function getLastRowPieces(Board $board, bool $color): array
     {
         $lastRow = $color ? 1 : 8;
@@ -172,5 +202,27 @@ class TimFish {
             }
         }
         return $pieces;
+    }
+
+    public static function getPawnsNotDeveloped(Board $board, bool $color): array
+    {
+        $pawnRow = $color ? 2 : 7;
+        $pieces = [];
+        foreach ($board->jsonSerialize() as $cols) {
+            foreach ($cols as $number => $piece) {
+                if ($piece === null || $number !== $pawnRow) {
+                    continue;
+                }
+                if (($piece['piece'] === 'P') && $piece['color'] === $color){
+                    $pieces[] = $piece['piece'];
+                }
+            }
+        }
+
+        if (count ($pieces) >= 5) {
+            return $pieces;
+        }
+
+        return [];
     }
 }

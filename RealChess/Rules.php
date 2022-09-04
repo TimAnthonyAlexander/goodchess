@@ -667,18 +667,7 @@ class Rules{
 
     public function getAllMovesForKing(Board $board, Position $position): array
     {
-        $moves = [];
-
-        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() + 1));
-        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() - 1));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber()));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber()));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() + 1));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() - 1));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() + 1));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() - 1));
-
-        return $moves;
+        return $this->extracted($position);
     }
 
     public function getAllMovesForQueen(Board $board, Position $position): array
@@ -686,9 +675,7 @@ class Rules{
         $moves = [];
 
         $moves = array_merge($moves, $this->getAllMovesForBishop($board, $position));
-        $moves = array_merge($moves, $this->getAllMovesForRook($board, $position, 'R'));
-
-        return $moves;
+        return array_merge($moves, $this->getAllMovesForRook($board, $position, 'R'));
     }
 
     public function getAllMovesForBishop(Board $board, Position $position): array
@@ -700,9 +687,9 @@ class Rules{
         foreach ($diagonals as $diagonal) {
             assert($diagonal instanceof Notation);
 
-            if ($this->isValidFor($diagonal, $board)) {
+            #if ($this->isValidFor($diagonal, $board)) {
                 $moves[] = $diagonal;
-            }
+            #}
         }
 
         return $moves;
@@ -717,9 +704,9 @@ class Rules{
         foreach ($straights as $straight) {
             assert($straight instanceof Notation);
 
-            if ($this->isValidFor($straight, $board, $override ?? 'R', true)) {
+            #if ($this->isValidFor($straight, $board, $override ?? 'R', true)) {
                 $moves[] = $straight;
-            }
+            #}
         }
 
         return $moves;
@@ -743,18 +730,7 @@ class Rules{
 
     public function getAllMovesForPawn(Board $board, Position $position): array
     {
-        $moves = [];
-
-        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() + 1));
-        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() - 1));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber()));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber()));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() + 1));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() - 1));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() + 1));
-        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() - 1));
-
-        return $moves;
+        return $this->extracted($position);
     }
 
     public function getAllMovesForPiece(Board $board, Position $position): array
@@ -771,17 +747,38 @@ class Rules{
         return $this->filterTakes($board, ...$this->filterMoves($board, ...$movesFor));
     }
 
+    public function getAllTakeMoves(Board $board, ?bool $color = null): array {
+        /** @var array<int, Position> $allPieces */
+        $allPieces = $board->getPieces($color, true);
+
+        $allTakes = [];
+
+        foreach ($allPieces as $piece) {
+            assert($piece instanceof Position);
+
+            $moves = $this->getAllTakesForPiece($board, $piece);
+
+            $allTakes = array_merge($allTakes, $moves);
+        }
+
+        return $allTakes;
+    }
+
     private function filterTakes(Board $board, Notation ...$moves): array
     {
         $filtered = [];
 
         foreach ($moves as $move) {
-            if ($board->getPieceFromPosition($move->getTo()) !== null) {
+            $from = $board->getPieceFromPosition($move->getFrom());
+            $to = $board->getPieceFromPosition($move->getTo());
+            assert($from instanceof Piece || $from === null);
+            assert($to instanceof Piece || $to === null);
+            if ($to !== null && $from !== null && $to->getColor() !== $from->getColor()) {
                 $filtered[] = $move;
             }
         }
 
-        return $filtered;
+        return $this->filterMoves($board, ...$filtered);
     }
 
     /**
@@ -821,5 +818,24 @@ class Rules{
             'P' => $this->getAllMovesForPawn($board, $position),
             default => throw new InvalidArgumentException('Unknown piece ' . $piece->getName()),
         };
+    }
+
+    /**
+     * @param Position $position
+     * @return array
+     */
+    private function extracted(Position $position): array{
+        $moves = [];
+
+        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position($position->getLetter(), $position->getNumber() - 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber()));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber()));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), 1), $position->getNumber() - 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() + 1));
+        $moves[] = new Notation($position, new Position(Board::calculateLetter($position->getLetter(), -1), $position->getNumber() - 1));
+
+        return $moves;
     }
 }
