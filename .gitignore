@@ -2,3 +2,5 @@
 /vendor
 /vendor/**
 /RealChess/cache.json
+/.idea
+/.idea/**
