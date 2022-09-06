@@ -13,7 +13,7 @@ class Game {
         $board->initializeDefaultBoard();
 
         if ($interactive) {
-            self::play($board, $blind);
+            self::play($board, $blind, $cache);
             return;
         }
 
@@ -54,7 +54,7 @@ class Game {
         }
     }
 
-    private static function play(Board $board, bool $blind = false): void {
+    private static function play(Board $board, bool $blind, Cache $cache): void {
         print "\033[2J\033[;H";
         print "Chess by Tim Anthony Alexander - 2022".PHP_EOL.PHP_EOL;
 
@@ -65,8 +65,9 @@ class Game {
 
         $color = true;
 
+        print "A move can be like this: E2-E4, e2e4, o-o-o".PHP_EOL;
+
         while(true){
-            print "A move can be like this: E2-E4, e2e4, o-o-o".PHP_EOL;
             print "Enter Move for ". ($color ? "white" : "black") .": ";
             $handle = fopen ("php://stdin","rb");
             $line = fgets($handle);
@@ -92,12 +93,15 @@ class Game {
                 print "Chess by Tim Anthony Alexander - 2022".PHP_EOL.PHP_EOL;
                 $before = microtime(true);
                 $board->movePiece($notation);
+                $board->movePiece(TimFish::bestMove($board, false, 2, 30, false));
+                $color = !$color;
                 $board->anyChecks();
                 $after = round(microtime(true) - $before, 2);
                 if (!$blind) {
                     $board->viewTerminal();
                 } else {
-                    print $notation.PHP_EOL;
+                    print 'Your move: ' . $notation.PHP_EOL;
+                    print 'Answer: ' . $board->getLastMove().PHP_EOL.PHP_EOL;
                 }
                 print "Move took: " . $after . " seconds".PHP_EOL;
                 if (isset($GLOBALS['checked']) && $GLOBALS['checked']) {
@@ -107,6 +111,7 @@ class Game {
                 $eval = round(TimFish::evaluateBoard($board), 3);
                 $after = round(microtime(true) - $before, 2);
                 print "Evaluation: " . $eval . " (" . $after . "s)".PHP_EOL;
+                $cache->save();
             }
         }
     }

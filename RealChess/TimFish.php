@@ -109,7 +109,9 @@ class TimFish {
 
         $cacheKey = 'bestMove_'.$board->md5Board().'_'.($color ? 'w' : 'b');
 
-        $_SESSION['moveCount']++;
+        if (isset($_SESSION)){
+            $_SESSION['moveCount']++;
+        }
 
         if ($cache->isset($cacheKey)) {
             return Notation::generateFromString($cache->get($cacheKey));
