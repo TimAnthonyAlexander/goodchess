@@ -3,7 +3,7 @@ namespace RealChess;
 
 
 class Game {
-    public static function start(bool $interactive = false): void{
+    public static function start(bool $interactive = false, bool $blind = false): void{
         ini_set('max_execution_time', '4');
 
         $cache = new Cache();
@@ -13,7 +13,7 @@ class Game {
         $board->initializeDefaultBoard();
 
         if ($interactive) {
-            self::play($board);
+            self::play($board, $blind);
             return;
         }
 
@@ -45,17 +45,23 @@ class Game {
                     break;
                 }
                 $board->movePiece($notation);
-                $board->viewTerminal();
+                if (!$blind){
+                    $board->viewTerminal();
+                } else {
+                    print $notation;
+                }
             }
         }
     }
 
-    private static function play(Board $board): void {
+    private static function play(Board $board, bool $blind = false): void {
         print "\033[2J\033[;H";
         print "Chess by Tim Anthony Alexander - 2022".PHP_EOL.PHP_EOL;
 
         $rules = new Rules();
-        $board->viewTerminal();
+        if (!$blind) {
+            $board->viewTerminal();
+        }
 
         $color = true;
 
@@ -88,7 +94,11 @@ class Game {
                 $board->movePiece($notation);
                 $board->anyChecks();
                 $after = round(microtime(true) - $before, 2);
-                $board->viewTerminal();
+                if (!$blind) {
+                    $board->viewTerminal();
+                } else {
+                    print $notation.PHP_EOL;
+                }
                 print "Move took: " . $after . " seconds".PHP_EOL;
                 if (isset($GLOBALS['checked']) && $GLOBALS['checked']) {
                     print "CHECKED!".PHP_EOL;

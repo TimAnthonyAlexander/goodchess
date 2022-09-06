@@ -9,10 +9,7 @@ ini_set('memory_limit', '512M');
 
 require(__DIR__.'/vendor/autoload.php');
 
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+session_start();
 
 $cache = new Cache();
 $cache->load();
